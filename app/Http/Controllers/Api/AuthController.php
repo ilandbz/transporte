@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    /**
+     * POST /api/v1/auth/login
+     * Login para app móvil — devuelve token Sanctum Bearer
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Credenciales incorrectas.'
+            ], 401);
+        }
+
+        // Revocar tokens anteriores del mismo dispositivo (opcional)
+        // $user->tokens()->delete();
+
+        $token = $user->createToken('mobile-' . now()->timestamp)->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'email' => $user->email,
+                'role'  => $user->role,
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/v1/auth/logout
+     * Revoca el token actual
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Sesión cerrada.']);
+    }
+
+    /**
+     * GET /api/v1/auth/me
+     * Datos del usuario autenticado
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'id'    => $request->user()->id,
+            'name'  => $request->user()->name,
+            'email' => $request->user()->email,
+            'role'  => $request->user()->role,
+        ]);
+    }
+}

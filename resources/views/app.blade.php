@@ -1,47 +1,39 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<html data-bs-theme="light" lang="es" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
+    <title inertia>{{ config('app.name', 'Shinhua Transportes') }}</title>
 
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
-            })();
-        </script>
+    <!-- Falcon simplebar (para scroll sidebar) -->
+    <script src="/vendor/falcon/simplebar/simplebar.min.js"></script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
-        <style>
-            html {
-                background-color: oklch(1 0 0);
-            }
+    <!-- Falcon config PRIMERO -->
+    <script src="/vendor/falcon/js/config.js"></script>
 
-            html.dark {
-                background-color: oklch(0.145 0 0);
-            }
-        </style>
+    <!-- Falcon CSS -->
+    <link href="/vendor/falcon/simplebar/simplebar.min.css" rel="stylesheet">
+    <link href="/vendor/falcon/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    @vite(['resources/css/app.css', 'resources/js/app.ts'])
+    @inertiaHead
+</head>
+<body>
+    @inertia
 
-        @fonts
-
-        @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
-        <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
-        </x-inertia::head>
-    </head>
-    <body class="font-sans antialiased">
-        <x-inertia::app />
-    </body>
+    <script src="/vendor/falcon/popper/popper.min.js"></script>
+    <script src="/vendor/falcon/bootstrap/bootstrap.min.js"></script>
+    <script src="/vendor/falcon/anchorjs/anchor.min.js"></script>
+    <script src="/vendor/falcon/is/is.min.js"></script>
+    <script src="/vendor/falcon/lodash/lodash.min.js"></script>
+    <script src="/vendor/falcon/list.js/list.min.js"></script>
+    <script src="/vendor/falcon/js/theme.js"></script>
+    <script src="/vendor/falcon/js/flatpickr.js"></script>
+</body>
 </html>
