@@ -25,7 +25,13 @@ interface Props {
 const props = defineProps<Props>()
 
 function formatTime(d: string) {
-  return new Date(d).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+  const date = new Date(d);
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'p. m.' : 'a. m.';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
 }
 
 function formatMoney(v: number) {

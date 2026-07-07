@@ -9,6 +9,8 @@ class DniCache extends Model
 {
     use HasFactory;
 
+    protected $table = 'dni_cache';
+
     protected $fillable = [
         'tipo',
         'numero',

@@ -12,16 +12,21 @@ use App\Http\Controllers\VehicleWebController;
 use App\Http\Controllers\UserWebController;
 use App\Http\Controllers\RouteWebController;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/trips', [TripWebController::class, 'index'])->name('trips.index');
+    Route::post('/trips', [TripWebController::class, 'store'])->name('trips.store');
+    Route::delete('/trips/{trip}', [TripWebController::class, 'destroy'])->name('trips.destroy');
     Route::get('/billing/cpe', [BillingController::class, 'consolaCpe'])->name('billing.cpe');
     Route::post('/billing/cpe/{ticket}/reintentar', [BillingController::class, 'reintentarCpe'])->name('billing.cpe.reintentar');
     Route::get('/reports/caja', [ReportController::class, 'liquidacion'])->name('reports.caja');
     
     Route::get('/tickets', [TicketWebController::class, 'index'])->name('tickets.index');
+    Route::post('/tickets', [TicketWebController::class, 'store'])->name('tickets.store');
     Route::delete('/tickets/{ticket}', [TicketWebController::class, 'destroy'])->name('tickets.destroy');
     Route::get('/packages', [PackageWebController::class, 'index'])->name('packages.index');
     Route::get('/billing/sync', [SyncPanelController::class, 'index'])->name('billing.sync');

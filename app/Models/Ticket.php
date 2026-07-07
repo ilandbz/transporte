@@ -16,6 +16,7 @@ class Ticket extends Model
         'trip_id',
         'user_id',
         'numero_asiento',
+        'clase',
         'origen_tramo',
         'destino_tramo',
         'ubigeo_origen',

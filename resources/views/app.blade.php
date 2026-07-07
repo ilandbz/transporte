@@ -18,6 +18,7 @@
     <!-- Falcon CSS -->
     <link href="/vendor/falcon/simplebar/simplebar.min.css" rel="stylesheet">
     <link href="/vendor/falcon/css/theme.min.css" rel="stylesheet" id="style-default">
+    <link href="/vendor/falcon/flatpickr/flatpickr.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

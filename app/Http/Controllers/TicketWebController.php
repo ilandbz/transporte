@@ -8,6 +8,8 @@ use Inertia\Response;
 
 class TicketWebController extends Controller
 {
+    public function __construct(private \App\Services\TicketService $ticketService) {}
+
     public function index(Request $request): Response
     {
         $query = Ticket::with(['trip.vehicle', 'trip.route', 'vendedor'])
@@ -36,6 +38,37 @@ class TicketWebController extends Controller
         ];
 
         return Inertia::render('Tickets/Index', compact('tickets','filtros','stats'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'trip_id'                 => 'required|exists:trips,id',
+            'uuid_local'              => 'required|uuid',
+            'numero_asiento'          => 'required|integer|min:1',
+            'clase'                   => 'required|string|in:normal,vip',
+            'origen_tramo'            => 'required|string',
+            'destino_tramo'           => 'required|string',
+            'ubigeo_origen'           => 'required|string|size:6',
+            'ubigeo_destino'          => 'required|string|size:6',
+            'dni_pasajero'            => 'nullable|string|max:15',
+            'nombre_pasajero'         => 'nullable|string|max:200',
+            'metodo_pago'             => 'required|in:efectivo,yape,plin,transferencia',
+            'tipo_documento'          => 'required|in:BOLETA,FACTURA,TICKET_INTERNO',
+            'emitido_en'              => 'required|date',
+            'emitido_en_contingencia' => 'required|boolean',
+        ]);
+
+        $trip = \App\Models\Trip::findOrFail($validated['trip_id']);
+
+        try {
+            $ticket = $this->ticketService->create($validated, $trip);
+            return back()->with('success', 'Ticket creado correctamente.');
+        } catch (\Exception $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function destroy(Ticket $ticket)

@@ -26,7 +26,7 @@ class TicketService
             $tarifa = RouteTariff::where('route_id', $trip->route_id)
                 ->where('origen_tramo', $data['origen_tramo'])
                 ->where('destino_tramo', $data['destino_tramo'])
-                ->where('clase', 'normal')
+                ->where('clase', $data['clase'])
                 ->first();
 
             if (!$tarifa) {
@@ -50,6 +50,7 @@ class TicketService
                 'trip_id'                 => $trip->id,
                 'user_id'                 => auth()->id(),
                 'numero_asiento'          => $data['numero_asiento'],
+                'clase'                   => $data['clase'],
                 'origen_tramo'            => $data['origen_tramo'],
                 'destino_tramo'           => $data['destino_tramo'],
                 'ubigeo_origen'           => $data['ubigeo_origen'],
