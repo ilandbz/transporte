@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
 interface Props {
   packages: {
@@ -17,9 +18,13 @@ interface Props {
     entregados: number
     pendientes: number
   }
+  trips: any[]
 }
 
 const props = defineProps<Props>()
+
+import PackageFormModal from '@/Components/PackageFormModal.vue'
+const packageModal = ref<InstanceType<typeof PackageFormModal> | null>(null)
 
 const filter = (key: string, value: string) => {
   const params = { ...props.filtros, [key]: value }
@@ -74,7 +79,7 @@ const formatDate = (dateStr: string) => {
 
     <!-- Filters & Table -->
     <div class="card">
-      <div class="card-header bg-light d-flex flex-wrap align-items-center gap-3">
+      <div class="card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
           <label class="form-label fs--2 text-uppercase mb-1">Estado</label>
           <select @change="(e) => filter('estado', (e.target as HTMLSelectElement).value)" class="form-select form-select-sm">
@@ -83,6 +88,11 @@ const formatDate = (dateStr: string) => {
             <option value="en_transito" :selected="filtros.estado === 'en_transito'">En Tránsito</option>
             <option value="entregado" :selected="filtros.estado === 'entregado'">Entregado</option>
           </select>
+        </div>
+        <div>
+          <button @click="packageModal?.show()" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i> Nueva Encomienda
+          </button>
         </div>
       </div>
 
@@ -101,6 +111,7 @@ const formatDate = (dateStr: string) => {
                 <th class="text-center py-3">Pago</th>
                 <th class="text-center py-3">Placa</th>
                 <th class="py-3 pe-3">Fecha</th>
+                <th class="text-end py-3 pe-3">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -144,9 +155,22 @@ const formatDate = (dateStr: string) => {
                 <td class="fs--1 text-secondary pe-3">
                   {{ formatDate(p.created_at) }}
                 </td>
+                <td class="text-end pe-3">
+                  <div class="dropdown font-sans-serif position-static">
+                    <button class="btn btn-link text-600 btn-sm dropdown-toggle btn-reveal" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false">
+                      <span class="fas fa-print fs--1"></span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end border py-0">
+                      <div class="bg-white py-2">
+                        <a class="dropdown-item" :href="`/packages/${p.id}/print?format=80mm`" target="_blank">Ticket (80mm)</a>
+                        <a class="dropdown-item" :href="`/packages/${p.id}/print?format=a4`" target="_blank">Formato A4/A5</a>
+                      </div>
+                    </div>
+                  </div>
+                </td>
               </tr>
               <tr v-if="packages.data.length === 0">
-                <td colspan="10" class="text-center text-muted py-5">No hay encomiendas registradas.</td>
+                <td colspan="11" class="text-center text-muted py-5">No hay encomiendas registradas.</td>
               </tr>
             </tbody>
           </table>
@@ -154,4 +178,6 @@ const formatDate = (dateStr: string) => {
       </div>
     </div>
   </AppLayout>
+
+  <PackageFormModal ref="packageModal" :trips="trips" />
 </template>

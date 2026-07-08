@@ -120,13 +120,13 @@ class SunatGreenterService
             $baseImponible = round($precio / 1.18, 2);
             $igv           = round($precio - $baseImponible, 2);
 
-            // Cliente (pasajero)
-            $dniPasajero = $ticket->dni_pasajero ?? '00000000';
-            $tipDoc      = strlen($dniPasajero) === 8 ? '1' : '0'; // 1=DNI, 0=varios
+            // Cliente (facturación)
+            $docFacturacion = $ticket->documento_facturacion ?? $ticket->dni_pasajero ?? '00000000';
+            $tipDoc = strlen($docFacturacion) === 11 ? '6' : (strlen($docFacturacion) === 8 ? '1' : '0'); // 6=RUC, 1=DNI, 0=varios
             $client = (new Client())
                 ->setTipoDoc($tipDoc)
-                ->setNumDoc($dniPasajero)
-                ->setRznSocial($ticket->nombre_pasajero ?? 'CLIENTE VARIOS');
+                ->setNumDoc($docFacturacion)
+                ->setRznSocial($ticket->nombre_facturacion ?? $ticket->nombre_pasajero ?? 'CLIENTE VARIOS');
 
             // Descripción del servicio (incluye datos Catálogo N°19)
             $descripcion = implode(' | ', array_filter([
@@ -218,10 +218,12 @@ class SunatGreenterService
             $baseImponible = round($precio / 1.18, 2);
             $igv           = round($precio - $baseImponible, 2);
 
+            // Cliente (facturación)
+            $docFacturacion = $ticket->documento_facturacion ?? '00000000000';
             $client = (new Client())
-                ->setTipoDoc('6')               // 6 = RUC
-                ->setNumDoc($ticket->dni_pasajero ?? '20000000000')
-                ->setRznSocial($ticket->nombre_pasajero ?? 'EMPRESA');
+                ->setTipoDoc('6') // 6 = RUC
+                ->setNumDoc($docFacturacion)
+                ->setRznSocial($ticket->nombre_facturacion ?? 'EMPRESA GENÉRICA');
 
             $descripcion = "PASAJE TERRESTRE {$ticket->origen_tramo} - {$ticket->destino_tramo} | ASIENTO N°{$ticket->numero_asiento} | PLACA: {$ticket->placa_vehiculo}";
 

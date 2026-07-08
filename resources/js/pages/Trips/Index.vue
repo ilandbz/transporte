@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router, useForm } from '@inertiajs/vue3'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 declare const flatpickr: any
 declare const bootstrap: any
@@ -45,6 +45,9 @@ const dateRef = ref<HTMLInputElement | null>(null)
 
 let tripModal: any = null
 let ticketModal: any = null
+
+import PackageFormModal from '@/Components/PackageFormModal.vue'
+const packageModal = ref<InstanceType<typeof PackageFormModal> | null>(null)
 
 onMounted(() => {
   if (dateRef.value) {
@@ -153,6 +156,7 @@ function generateUUID() {
 const activeTrip = ref<Trip | null>(null)
 
 const ticketForm = useForm({
+  id: null as number | null,
   trip_id: null as number | null,
   uuid_local: '',
   numero_asiento: null as number | null,
@@ -163,10 +167,22 @@ const ticketForm = useForm({
   ubigeo_destino: '100101', // mock por defecto
   dni_pasajero: '',
   nombre_pasajero: '',
+  telefono_pasajero: '',
+  estado_pago: 'pendiente',
   metodo_pago: 'efectivo',
   tipo_documento: 'BOLETA',
+  facturar_tercero: false,
+  documento_facturacion: '',
+  nombre_facturacion: '',
   emitido_en: '',
   emitido_en_contingencia: false,
+  estado: 'confirmado',
+})
+
+watch(() => ticketForm.tipo_documento, (newVal) => {
+  if (newVal === 'BOLETA' || newVal === 'FACTURA') {
+    ticketForm.estado_pago = 'pagado'
+  }
 })
 
 function openTicketModal(trip: Trip) {
@@ -188,11 +204,101 @@ function openTicketModal(trip: Trip) {
   ticketModal.show()
 }
 
+function getTicketForSeat(n: number) {
+  return activeTrip.value?.tickets?.find(t => t.numero_asiento === n)
+}
+
+function handleSeatClick(n: number) {
+  const ticket = getTicketForSeat(n)
+  
+  if (!ticket) {
+    // Asiento libre
+    if (ticketForm.id) {
+      // Estábamos editando una reserva, limpiar datos
+      const oldTripId = ticketForm.trip_id;
+      ticketForm.reset();
+      ticketForm.clearErrors();
+      ticketForm.trip_id = oldTripId;
+      ticketForm.uuid_local = generateUUID();
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      ticketForm.emitido_en = now.toISOString().slice(0, 16);
+    }
+    ticketForm.numero_asiento = n
+    ticketForm.id = null
+  } else if (ticket.estado === 'reservado') {
+    // Asiento reservado, cargar datos para confirmar o anular
+    ticketForm.id = ticket.id
+    ticketForm.numero_asiento = n
+    ticketForm.dni_pasajero = ticket.dni_pasajero || ''
+    ticketForm.nombre_pasajero = ticket.nombre_pasajero || ''
+    ticketForm.telefono_pasajero = ticket.telefono_pasajero || ''
+    ticketForm.clase = ticket.clase || 'normal'
+    ticketForm.origen_tramo = ticket.origen_tramo
+    ticketForm.destino_tramo = ticket.destino_tramo
+    ticketForm.estado_pago = 'pagado'
+    ticketForm.metodo_pago = 'efectivo'
+    ticketForm.tipo_documento = 'BOLETA'
+    ticketForm.documento_facturacion = ''
+    ticketForm.nombre_facturacion = ''
+    ticketForm.facturar_tercero = false
+  } else {
+    // Asiento confirmado, no hacer nada o mostrar alerta
+    Swal.fire({
+      icon: 'info',
+      title: 'Asiento Ocupado',
+      text: 'Este asiento ya está pagado o confirmado.',
+      timer: 2000,
+      showConfirmButton: false
+    })
+  }
+}
+
+async function buscarClientePasaje() {
+  const dni = ticketForm.dni_pasajero
+  if (!dni || (dni.length !== 8 && dni.length !== 11)) return
+  
+  try {
+    const res = await fetch(`/clientes/search/${dni}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.encontrado) {
+        ticketForm.nombre_pasajero = data.datos.nombre || ''
+        ticketForm.telefono_pasajero = data.datos.telefono || ''
+      }
+    }
+  } catch (error) {
+    // console.log("Not found")
+  }
+}
+
+async function buscarClienteFacturacion() {
+  const doc = ticketForm.documento_facturacion
+  if (!doc) return
+  
+  try {
+    const res = await fetch(`/clientes/search/${doc}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.encontrado) {
+        ticketForm.nombre_facturacion = data.datos.nombre || ''
+      }
+    }
+  } catch (error) {
+    // console.log("Not found")
+  }
+}
+
 function submitTicket() {
-  ticketForm.post('/tickets', {
+  const url = ticketForm.id ? `/tickets/${ticketForm.id}/confirm-reservation` : '/tickets'
+  const method = ticketForm.id ? 'put' : 'post'
+  
+  ticketForm.estado = 'confirmado'
+  
+  ticketForm[method](url, {
     onSuccess: () => {
       ticketModal.hide()
-      Swal.fire('¡Éxito!', 'Pasaje vendido correctamente', 'success')
+      Swal.fire('¡Éxito!', 'Pasaje vendido/confirmado correctamente', 'success')
     },
     onError: (errors) => {
         let msg = 'Verifica los datos ingresados.';
@@ -202,6 +308,61 @@ function submitTicket() {
             msg = Object.values(errors)[0] as string;
         }
         Swal.fire('Error', msg, 'error');
+    }
+  })
+}
+
+function submitReservation() {
+  ticketForm.estado = 'reservado'
+  ticketForm.tipo_documento = 'TICKET_INTERNO'
+  ticketForm.estado_pago = 'pendiente'
+  
+  ticketForm.post('/tickets', {
+    onSuccess: () => {
+      ticketModal.hide()
+      Swal.fire('¡Reserva Exitosa!', 'El asiento ha sido reservado', 'success')
+    },
+    onError: (errors) => {
+        let msg = 'Verifica los datos ingresados.';
+        if (errors.error) {
+            msg = errors.error;
+        } else if (Object.values(errors).length > 0) {
+            msg = Object.values(errors)[0] as string;
+        }
+        Swal.fire('Error', msg, 'error');
+    }
+  })
+}
+
+function anularReserva() {
+  if (!ticketForm.id) return
+  
+  Swal.fire({
+    title: '¿Anular reserva?',
+    text: "Esta acción liberará el asiento.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, anular',
+    cancelButtonText: 'No'
+  }).then((result: any) => {
+    if (result.isConfirmed) {
+      router.delete(`/tickets/${ticketForm.id}`, {
+        onSuccess: () => {
+          ticketModal.hide()
+          Swal.fire('Anulada', 'La reserva fue anulada.', 'success')
+        }
+      })
+    }
+  })
+}
+
+function togglePayment(ticket: any) {
+  router.patch(`/tickets/${ticket.id}/toggle-payment`, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      // Toast or simple notification could be added here
     }
   })
 }
@@ -243,6 +404,7 @@ function submitTicket() {
                 <th>Salida</th>
                 <th class="text-center">Estado</th>
                 <th class="text-center">Tickets</th>
+                <th class="text-center">Asientos</th>
                 <th class="text-end">Acciones</th>
               </tr>
             </thead>
@@ -259,9 +421,15 @@ function submitTicket() {
                   </span>
                 </td>
                 <td class="text-center fw-medium">{{ t.tickets_count }}</td>
+                <td class="text-center fw-medium">
+                    {{ t.vehicle.asientos_ocupados?.length || 0 }} / {{ t.vehicle.capacidad_asientos }}
+                </td>
                 <td class="text-end text-nowrap">
                   <button v-if="t.estado === 'abierto'" @click="openTicketModal(t)" class="btn btn-success btn-sm me-1" title="Vender Pasaje">
                     <i class="fas fa-ticket-alt"></i>
+                  </button>
+                  <button v-if="t.estado === 'abierto'" @click="packageModal?.show(t.id)" class="btn btn-warning btn-sm me-1 text-white" title="Registrar Encomienda">
+                    <i class="fas fa-box"></i>
                   </button>
                   <button @click="deleteTrip(t)" class="btn btn-danger btn-sm" title="Eliminar Viaje">
                     <i class="fas fa-trash"></i>
@@ -343,15 +511,20 @@ function submitTicket() {
           </div>
           <div class="modal-body">
             <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">DNI Pasajero (Opcional)</label>
-                <input type="text" v-model="ticketForm.dni_pasajero" class="form-control" :class="{ 'is-invalid': ticketForm.errors.dni_pasajero }" maxlength="15">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">DNI Pasajero</label>
+                <input type="text" v-model="ticketForm.dni_pasajero" @blur="buscarClientePasaje" class="form-control" :class="{ 'is-invalid': ticketForm.errors.dni_pasajero }" maxlength="15">
                 <div class="invalid-feedback">{{ ticketForm.errors.dni_pasajero }}</div>
               </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre Pasajero (Opcional)</label>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Nombre Pasajero</label>
                 <input type="text" v-model="ticketForm.nombre_pasajero" class="form-control" :class="{ 'is-invalid': ticketForm.errors.nombre_pasajero }">
                 <div class="invalid-feedback">{{ ticketForm.errors.nombre_pasajero }}</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Celular (Para WhatsApp)</label>
+                <input type="text" v-model="ticketForm.telefono_pasajero" class="form-control" :class="{ 'is-invalid': ticketForm.errors.telefono_pasajero }" required>
+                <div class="invalid-feedback">{{ ticketForm.errors.telefono_pasajero }}</div>
               </div>
             </div>
             
@@ -360,7 +533,8 @@ function submitTicket() {
               <label class="form-label d-block text-center fw-bold mb-3"><i class="fas fa-bus"></i> Seleccionar Asiento</label>
               
               <div class="d-flex justify-content-center mb-3 gap-3">
-                <span class="badge bg-secondary"><i class="fas fa-couch"></i> Ocupado</span>
+                <span class="badge bg-secondary"><i class="fas fa-couch"></i> Confirmado</span>
+                <span class="badge bg-warning text-dark"><i class="fas fa-couch"></i> Reservado</span>
                 <span class="badge bg-success"><i class="fas fa-couch"></i> Seleccionado</span>
                 <span class="badge bg-white text-dark border"><i class="fas fa-couch"></i> Libre</span>
               </div>
@@ -369,12 +543,12 @@ function submitTicket() {
                 <template v-for="n in activeTrip.vehicle.capacidad_asientos" :key="n">
                   <button type="button" class="btn btn-sm d-flex align-items-center justify-content-center shadow-none"
                           :class="{
-                            'btn-secondary': activeTrip.asientos_ocupados.includes(n),
+                            'btn-secondary': getTicketForSeat(n)?.estado === 'confirmado',
+                            'btn-warning text-dark': getTicketForSeat(n)?.estado === 'reservado',
                             'btn-success': ticketForm.numero_asiento === n,
                             'btn-outline-secondary bg-white': !activeTrip.asientos_ocupados.includes(n) && ticketForm.numero_asiento !== n
                           }"
-                          :disabled="activeTrip.asientos_ocupados.includes(n)"
-                          @click="ticketForm.numero_asiento = n"
+                          @click="handleSeatClick(n)"
                           style="width: 45px; height: 45px; font-weight: bold; font-size: 1.1rem;">
                     {{ n }}
                   </button>
@@ -407,18 +581,17 @@ function submitTicket() {
             </div>
 
             <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Tipo Documento</label>
-                <select v-model="ticketForm.tipo_documento" class="form-select" :class="{ 'is-invalid': ticketForm.errors.tipo_documento }" required>
-                  <option value="BOLETA">Boleta</option>
-                  <option value="FACTURA">Factura</option>
-                  <option value="TICKET_INTERNO">Ticket Interno</option>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estado de Pago</label>
+                <select v-model="ticketForm.estado_pago" class="form-select" :class="{ 'is-invalid': ticketForm.errors.estado_pago }" :disabled="ticketForm.tipo_documento === 'BOLETA' || ticketForm.tipo_documento === 'FACTURA'">
+                  <option value="pendiente">Pendiente (Pago en ruta / destino)</option>
+                  <option value="pagado">Pagado (Anticipado)</option>
                 </select>
-                <div class="invalid-feedback">{{ ticketForm.errors.tipo_documento }}</div>
+                <div class="invalid-feedback">{{ ticketForm.errors.estado_pago }}</div>
               </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">Método Pago</label>
-                <select v-model="ticketForm.metodo_pago" class="form-select" :class="{ 'is-invalid': ticketForm.errors.metodo_pago }" required>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Método de Pago</label>
+                <select v-model="ticketForm.metodo_pago" class="form-select" :class="{ 'is-invalid': ticketForm.errors.metodo_pago }">
                   <option value="efectivo">Efectivo</option>
                   <option value="yape">Yape</option>
                   <option value="plin">Plin</option>
@@ -426,27 +599,67 @@ function submitTicket() {
                 </select>
                 <div class="invalid-feedback">{{ ticketForm.errors.metodo_pago }}</div>
               </div>
-              <div class="col-md-4 mb-3">
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo de Documento</label>
+                <select v-model="ticketForm.tipo_documento" class="form-select" :class="{ 'is-invalid': ticketForm.errors.tipo_documento }">
+                  <option value="BOLETA">Boleta Electrónica</option>
+                  <option value="FACTURA">Factura Electrónica</option>
+                  <option value="TICKET_INTERNO">Ticket Interno (No SUNAT)</option>
+                </select>
+                <div class="invalid-feedback">{{ ticketForm.errors.tipo_documento }}</div>
+              </div>
+              <div class="col-md-6 mb-3">
                 <label class="form-label">Fecha Emisión</label>
                 <input type="datetime-local" v-model="ticketForm.emitido_en" class="form-control" :class="{ 'is-invalid': ticketForm.errors.emitido_en }" required>
                 <div class="invalid-feedback">{{ ticketForm.errors.emitido_en }}</div>
               </div>
             </div>
-            
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" v-model="ticketForm.emitido_en_contingencia" id="contingencia">
-              <label class="form-check-label" for="contingencia">
-                Emitido en contingencia (sin conexión a SUNAT)
-              </label>
+
+            <!-- Datos de Facturación (Opcional para Boleta, Obligatorio para Factura) -->
+            <div class="bg-light p-3 rounded mb-3" v-if="ticketForm.tipo_documento === 'FACTURA' || ticketForm.tipo_documento === 'BOLETA'">
+              <div class="form-check mb-2" v-if="ticketForm.tipo_documento === 'BOLETA'">
+                <input class="form-check-input" type="checkbox" id="facturarTercero" v-model="ticketForm.facturar_tercero">
+                <label class="form-check-label fw-bold" for="facturarTercero">
+                  Emitir comprobante a nombre de otra persona (Tercero)
+                </label>
+              </div>
+              
+              <div class="row" v-if="ticketForm.tipo_documento === 'FACTURA' || ticketForm.facturar_tercero">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">{{ ticketForm.tipo_documento === 'FACTURA' ? 'RUC Cliente' : 'DNI/Doc Cliente' }}</label>
+                  <input type="text" v-model="ticketForm.documento_facturacion" @blur="buscarClienteFacturacion" class="form-control" :class="{ 'is-invalid': ticketForm.errors.documento_facturacion }" :required="ticketForm.tipo_documento === 'FACTURA' || ticketForm.facturar_tercero">
+                  <div class="invalid-feedback">{{ ticketForm.errors.documento_facturacion }}</div>
+                </div>
+                <div class="col-md-8 mb-3">
+                  <label class="form-label">Razón Social / Nombre Completo</label>
+                  <input type="text" v-model="ticketForm.nombre_facturacion" class="form-control" :class="{ 'is-invalid': ticketForm.errors.nombre_facturacion }" :required="ticketForm.tipo_documento === 'FACTURA' || ticketForm.facturar_tercero">
+                  <div class="invalid-feedback">{{ ticketForm.errors.nombre_facturacion }}</div>
+                </div>
+              </div>
             </div>
 
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-success" :disabled="ticketForm.processing">Vender Pasaje</button>
+            
+            <template v-if="ticketForm.id">
+              <button type="button" class="btn btn-danger" @click="anularReserva" :disabled="ticketForm.processing">Anular Reserva</button>
+              <button type="submit" class="btn btn-success" :disabled="ticketForm.processing">Confirmar Venta</button>
+            </template>
+            <template v-else>
+              <button type="button" class="btn btn-warning text-dark" @click="submitReservation" :disabled="ticketForm.processing">Solo Reservar</button>
+              <button type="submit" class="btn btn-success" :disabled="ticketForm.processing">Vender Pasaje</button>
+            </template>
           </div>
         </form>
       </div>
     </div>
   </div>
+
+  <!-- Modal Encomiendas -->
+  <PackageFormModal ref="packageModal" :trips="trips" />
+
 </template>

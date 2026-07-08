@@ -18,7 +18,7 @@ class RouteSeeder extends Seeder
             'destino' => 'Puños',
             'ubigeo_origen' => '100101',
             'ubigeo_destino' => '100801',
-            'paradas' => json_encode(['Llata']),
+            'paradas' => ['Llata'],
             'activo' => true,
         ]);
 
@@ -28,7 +28,7 @@ class RouteSeeder extends Seeder
             'destino' => 'Llata',
             'ubigeo_origen' => '100101',
             'ubigeo_destino' => '100301',
-            'paradas' => json_encode([]),
+            'paradas' => [],
             'activo' => true,
         ]);
 
@@ -38,7 +38,7 @@ class RouteSeeder extends Seeder
             'destino' => 'Puños',
             'ubigeo_origen' => '100301',
             'ubigeo_destino' => '100801',
-            'paradas' => json_encode([]),
+            'paradas' => [],
             'activo' => true,
         ]);
     }

@@ -160,6 +160,15 @@ onMounted(() => {
                 </Link>
               </li>
 
+              <li class="nav-item">
+                <Link class="nav-link" :class="{ 'active': $page.url.startsWith('/clientes') }" href="/clientes">
+                  <div class="d-flex align-items-center">
+                    <span class="nav-link-icon"><i class="fas fa-users"></i></span>
+                    <span class="nav-link-text ps-1">Clientes</span>
+                  </div>
+                </Link>
+              </li>
+
             </ul>
           </div>
         </div>

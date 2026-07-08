@@ -57,7 +57,14 @@ class VehicleWebController extends Controller
 
     private function generarLayout(int $capacidad, string $tipo): array
     {
-        $asientos = range(1, $capacidad);
+        $asientos = [];
+        for ($i = 1; $i <= $capacidad; $i++) {
+            $asientos[] = [
+                'numero' => $i,
+                'clase' => 'normal'
+            ];
+        }
+        
         $filas    = (int) ceil($capacidad / ($tipo === 'minivan' ? 2 : 4));
         return [
             'filas'    => $filas,

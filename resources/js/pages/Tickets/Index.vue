@@ -2,6 +2,8 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router } from '@inertiajs/vue3'
 import StatusBadge from '@/Components/StatusBadge.vue'
+import ConvertCpeModal from '@/Components/ConvertCpeModal.vue'
+import { ref } from 'vue'
 
 declare const Swal: any
 
@@ -25,6 +27,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const convertModalRef = ref<InstanceType<typeof ConvertCpeModal> | null>(null)
 
 const filter = (key: string, value: string) => {
   const params = { ...props.filtros, [key]: value }
@@ -46,6 +49,12 @@ const deleteTicket = async (ticket: any) => {
   if (result.isConfirmed) {
     router.delete(`/tickets/${ticket.id}`)
   }
+}
+
+function togglePayment(ticket: any) {
+  router.patch(`/tickets/${ticket.id}/toggle-payment`, {}, {
+    preserveScroll: true
+  })
 }
 
 const formatDate = (dateStr: string) => {
@@ -112,6 +121,7 @@ const formatDate = (dateStr: string) => {
                 <th class="py-3">Tramo</th>
                 <th class="text-center py-3">Asiento</th>
                 <th class="text-center py-3">Placa</th>
+                <th class="text-center py-3">Clase</th>
                 <th class="text-end py-3">Monto</th>
                 <th class="text-center py-3">Sync</th>
                 <th class="py-3">Fecha</th>
@@ -140,8 +150,23 @@ const formatDate = (dateStr: string) => {
                     {{ t.trip?.vehicle?.placa || t.placa_vehiculo }}
                   </span>
                 </td>
+                <td class="text-center">
+                  <span class="badge border border-secondary text-secondary fw-medium">
+                    {{ t.clase }}
+                  </span>
+                </td>
                 <td class="text-end fw-semibold text-success">
                   S/ {{ parseFloat(t.precio).toFixed(2) }}
+                  <br>
+                  <span 
+                    @click="togglePayment(t)"
+                    class="badge rounded-pill mt-1" 
+                    :class="t.estado_pago === 'pagado' ? 'bg-success' : 'bg-danger'"
+                    :title="t.estado_pago === 'pagado' ? 'Marcar como pendiente' : 'Marcar como pagado'"
+                    style="cursor: pointer; font-size: 0.65rem;"
+                  >
+                    {{ t.estado_pago === 'pagado' ? 'CANCELADO' : 'PENDIENTE' }}
+                  </span>
                 </td>
                 <td class="text-center fs-2">
                   <span v-if="t.sincronizado" title="Sincronizado" class="text-success"><i class="fas fa-check-circle"></i></span>
@@ -150,15 +175,32 @@ const formatDate = (dateStr: string) => {
                 <td class="fs--1 text-secondary">
                   {{ formatDate(t.emitido_en) }}
                 </td>
-                <td class="text-center pe-3">
-                  <button v-if="!t.trip || t.trip.estado === 'abierto'" class="btn btn-sm btn-link text-danger p-0 shadow-none" title="Eliminar Ticket" @click="deleteTicket(t)">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                  <span v-else class="badge bg-secondary" title="El viaje ya partió o finalizó">Viajando</span>
+                <td class="text-end pe-3">
+                  <div class="d-inline-flex gap-2 align-items-center justify-content-end">
+                    <div class="dropdown font-sans-serif position-static">
+                      <button class="btn btn-link text-600 btn-sm dropdown-toggle btn-reveal" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false" title="Imprimir Ticket">
+                        <span class="fas fa-print fs--1"></span>
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end border py-0">
+                        <div class="bg-white py-2">
+                          <a class="dropdown-item" :href="`/tickets/${t.id}/print?format=80mm`" target="_blank">Imprimir (80mm)</a>
+                          <a class="dropdown-item" :href="`/tickets/${t.id}/print?format=a4`" target="_blank">Formato A4/A5</a>
+                        </div>
+                      </div>
+                    </div>
+                    <button v-if="t.tipo_documento === 'TICKET_INTERNO'" @click="convertModalRef?.show(t)" class="btn btn-sm btn-link text-warning p-0 shadow-none" title="Convertir a Boleta/Factura">
+                      <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    
+                    <button v-if="!t.trip || t.trip.estado === 'abierto'" class="btn btn-sm btn-link text-danger p-0 shadow-none" title="Eliminar Ticket" @click="deleteTicket(t)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                    <span v-else class="badge bg-secondary" title="El viaje ya partió o finalizó">Viajando</span>
+                  </div>
                 </td>
               </tr>
               <tr v-if="tickets.data.length === 0">
-                <td colspan="9" class="text-center text-muted py-5">No hay tickets registrados.</td>
+                <td colspan="10" class="text-center text-muted py-5">No hay tickets registrados.</td>
               </tr>
             </tbody>
           </table>
@@ -166,4 +208,9 @@ const formatDate = (dateStr: string) => {
       </div>
     </div>
   </AppLayout>
+
+  <!-- Modal para convertir TICKET_INTERNO a BOLETA/FACTURA -->
+  <ConvertCpeModal ref="convertModalRef" @success="() => {
+    Swal.fire('¡Éxito!', 'Comprobante generado correctamente', 'success')
+  }" />
 </template>

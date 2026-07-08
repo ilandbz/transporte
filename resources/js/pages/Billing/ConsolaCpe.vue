@@ -145,13 +145,28 @@ const getEstadoLabel = (ticket: any) => {
                   <StatusBadge :status="getEstadoLabel(t)" />
                 </td>
                 <td class="text-end">
-                  <button 
-                    v-if="t.tipo_documento === 'TICKET_INTERNO' || (t.cdr_status && t.cdr_status !== '0')"
-                    @click="reintentar(t.id)" 
-                    class="btn btn-warning btn-sm"
-                  >
-                    <i class="fas fa-sync-alt me-1"></i> Emitir CPE
-                  </button>
+                  <div class="d-inline-flex gap-2">
+                    <button 
+                      v-if="t.tipo_documento === 'TICKET_INTERNO' || (t.cdr_status && t.cdr_status !== '0')"
+                      @click="reintentar(t.id)" 
+                      class="btn btn-warning btn-sm"
+                      title="Reintentar emisión SUNAT"
+                    >
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                    
+                    <div class="dropdown font-sans-serif position-static">
+                      <button class="btn btn-primary btn-sm dropdown-toggle btn-reveal" type="button" data-bs-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false" title="Imprimir Ticket">
+                        <i class="fas fa-print"></i>
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end border py-0">
+                        <div class="bg-white py-2">
+                          <a class="dropdown-item" :href="`/tickets/${t.id}/print?format=80mm`" target="_blank">Imprimir (80mm)</a>
+                          <a class="dropdown-item" :href="`/tickets/${t.id}/print?format=a4`" target="_blank">Formato A4/A5</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
               <tr v-if="tickets.data.length === 0">

@@ -15,7 +15,7 @@ class TripWebController extends Controller
     {
         $fecha = $request->get('fecha', today()->toDateString());
 
-        $trips = Trip::with(['route', 'vehicle', 'conductor'])
+        $trips = Trip::with(['route', 'vehicle', 'conductor', 'tickets'])
             ->whereDate('fecha_salida', $fecha)
             ->withCount('tickets')
             ->orderBy('fecha_salida')
