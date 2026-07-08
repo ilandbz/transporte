@@ -80,6 +80,12 @@ class PackageWebController extends Controller
             );
         }
 
+        $activeBranchId = ($request->user()->role === 'admin' && session('active_branch_id'))
+            ? session('active_branch_id')
+            : $request->user()->branch_id;
+            
+        $validated['branch_id'] = $activeBranchId;
+
         Package::create($validated);
 
         return back()->with('success', 'Encomienda registrada correctamente.');

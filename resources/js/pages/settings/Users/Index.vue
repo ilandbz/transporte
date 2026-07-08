@@ -11,11 +11,19 @@ interface User {
   name: string
   email: string
   role: string
+  branch_id: number | null
+  branch: { name: string } | null
   created_at: string
+}
+
+interface Branch {
+  id: number
+  name: string
 }
 
 interface Props {
   users: User[]
+  branches: Branch[]
 }
 
 const props = defineProps<Props>()
@@ -29,6 +37,7 @@ const form = useForm({
   name: '',
   email: '',
   role: 'conductor',
+  branch_id: null as number | null,
   password: '',
 })
 
@@ -52,6 +61,7 @@ function openEdit(u: User) {
   form.name = u.name
   form.email = u.email
   form.role = u.role
+  form.branch_id = u.branch_id
   form.password = ''
   form.clearErrors()
   bsModal?.show()
@@ -119,6 +129,7 @@ function formatDate(d: string) {
               <tr>
                 <th>Nombre</th>
                 <th>Email</th>
+                <th>Sucursal</th>
                 <th>Rol</th>
                 <th>Registro</th>
                 <th class="text-center">Acciones</th>
@@ -128,6 +139,7 @@ function formatDate(d: string) {
               <tr v-for="u in users" :key="u.id">
                 <td class="fw-semibold">{{ u.name }}</td>
                 <td class="text-muted">{{ u.email }}</td>
+                <td class="text-muted">{{ u.branch?.name || '-' }}</td>
                 <td>
                   <span :class="['badge', roleBadge[u.role] ?? 'bg-secondary']">
                     {{ u.role }}
@@ -177,6 +189,16 @@ function formatDate(d: string) {
                 <option value="conductor">Conductor</option>
                 <option value="counter">Counter</option>
               </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Sucursal</label>
+              <select v-model="form.branch_id" class="form-select" :class="{ 'is-invalid': form.errors.branch_id }">
+                <option :value="null" disabled>Seleccione una sucursal</option>
+                <option v-for="branch in branches" :key="branch.id" :value="branch.id">
+                  {{ branch.name }}
+                </option>
+              </select>
+              <div v-if="form.errors.branch_id" class="invalid-feedback">{{ form.errors.branch_id }}</div>
             </div>
             <div class="mb-3">
               <label class="form-label">

@@ -40,6 +40,7 @@ class Ticket extends Model
         'emitido_en_contingencia',
         'emitido_en',
         'sincronizado_en',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -55,6 +56,11 @@ class Ticket extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function vendedor(): BelongsTo

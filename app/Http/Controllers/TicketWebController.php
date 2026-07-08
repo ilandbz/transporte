@@ -96,6 +96,12 @@ class TicketWebController extends Controller
         }
 
         try {
+            $activeBranchId = ($request->user()->role === 'admin' && session('active_branch_id'))
+                ? session('active_branch_id')
+                : $request->user()->branch_id;
+            
+            $validated['branch_id'] = $activeBranchId;
+
             $ticket = $this->ticketService->create($validated, $trip);
             return back()->with('success', 'Ticket creado correctamente.');
         } catch (\Exception $e) {

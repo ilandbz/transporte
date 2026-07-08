@@ -39,7 +39,20 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? $request->user()->load('branch') : null,
+                'active_branch' => function () use ($request) {
+                    if (!$request->user()) return null;
+                    if ($request->user()->role === 'admin' && session('active_branch_id')) {
+                        return \App\Models\Branch::find(session('active_branch_id'));
+                    }
+                    return $request->user()->branch;
+                },
+                'all_branches' => function () use ($request) {
+                    if ($request->user() && $request->user()->role === 'admin') {
+                        return \App\Models\Branch::where('is_active', true)->get();
+                    }
+                    return [];
+                },
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [

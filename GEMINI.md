@@ -18,11 +18,14 @@ Incluye:
 - Gestión de vehículos
 - Gestión de rutas
 - Gestión de tarifas
+- Gestión de sucursales (Branches)
+- Módulo de Encomiendas (Packages)
 - Emisión electrónica SUNAT mediante Greenter
+- Panel de Sincronización (Offline/Contingencias)
 - Dashboard administrativo
 - API REST para aplicación móvil
 - Autenticación mediante Sanctum
-- Procesamiento en cola (Jobs)
+- Procesamiento en cola (Jobs) para emisión SUNAT
 
 ---
 
@@ -42,9 +45,10 @@ Implementado:
 - Services
 - FormRequest
 - Eloquent Models
-- Jobs
+- Jobs (SyncBatchJob para emisión asíncrona)
 - Policies
-- Middleware
+- Middleware (Manejo de Sucursal Activa vía sesión y HandleInertiaRequests)
+- Multi-sucursal: Controladores de sucursal, encomiendas, pasajes
 - SQLite para desarrollo
 
 Integración SUNAT:
@@ -52,6 +56,7 @@ Integración SUNAT:
 - Greenter
 - Certificado PEM
 - SUNAT Beta operativo
+- Sistema de contingencia (sincronización forzada en caso de desconexión)
 
 ---
 
@@ -79,9 +84,17 @@ CRUD implementados:
 
 ✔ Rutas
 
+✔ Sucursales (CRUD y selector global para admin)
+
+✔ Encomiendas (Registro y reportes)
+
+✔ Tickets/Pasajes (Emisión, anulación, confirmación, impresión)
+
+✔ Panel de Sincronización (SUNAT Contingencias)
+
 Dashboard implementado.
 
-Login pendiente.
+Login implementado/pendiente integración fina.
 
 ---
 
@@ -621,3 +634,15 @@ La prioridad es mantener la consistencia del código existente, reutilizar compo
 - **Ruta Principal:** Trayecto completo de origen a destino final (ej. Huánuco - Puños).
 - **Tramos (Paradas intermedias):** Una ruta principal suele tener paradas (ej. Llata). Por eso, dentro de "Huánuco - Puños", se configuran tarifas para sub-trayectos (Huánuco → Llata, Llata → Puños) para pasajeros que suben o bajan a medio camino.
 - **Clase:** Nivel de servicio ofrecido (ej. "normal", "vip"). Permite tener precios distintos para el mismo tramo físico dependiendo de la comodidad o tipo de vehículo.
+
+# Lógica de Negocio — Sucursales (Branches)
+
+- **Sucursal Asignada:** Los usuarios (`counter`, `conductor`) operan dentro de su sucursal fija asignada.
+- **Admin Global:** El `admin` tiene un selector global en la barra superior (Top Navbar). La elección se guarda en la sesión (`active_branch_id`) y altera en tiempo real los registros que visualiza y emite (Reportes, Ventas, Encomiendas).
+- Todos los pasajes (Tickets) y Encomiendas (Packages) almacenan obligatoriamente el `branch_id` de la sucursal activa al momento de la venta.
+
+# Lógica de Negocio — Sincronización SUNAT (Jobs y Contingencias)
+
+- Al emitir un pasaje/encomienda, si hay conexión, se envía a SUNAT. Si falla, o si se marca como "contingencia", se guarda como `sincronizado = false`.
+- Existe un `SyncBatchJob` que procesa los documentos pendientes en segundo plano (`queue:work`).
+- Si el Job falla, o por decisión administrativa, en el **Panel de Facturación** (SyncPanel) existe la opción "Forzar Sincronización Global" para reintentar masivamente la emisión de todos los documentos pendientes.

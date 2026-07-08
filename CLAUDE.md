@@ -5,26 +5,32 @@
 
 ---
 
-## Estado del proyecto al 27/06/2026
+## Estado del proyecto al 08/07/2026
 
 ### ✅ BACKEND COMPLETADO Y VERIFICADO
-- 12 rutas API `/api/v1/` con `auth:sanctum` ✅
+- 12+ rutas API `/api/v1/` con `auth:sanctum` ✅
 - Auth móvil: `POST /api/v1/auth/login` → token Bearer ✅
-- 10 modelos Eloquent completos ✅
-- 5 Services (SunatGreenterService completo con Greenter) ✅
-- SUNAT Beta: Boleta B001-1 aceptada (CDR code 0) ✅
+- 13+ modelos Eloquent completos (incluyendo Branch, Package, Client, etc.) ✅
+- 5 Services (SunatGreenterService completo con Greenter y modo contingencia) ✅
+- SUNAT Beta: Boletas/Facturas aceptadas (CDR code 0) ✅
 - Certificado: `certs/cert.pem` ✅
-- SyncBatchJob para procesamiento en cola ✅
+- Jobs de procesamiento en cola (`SyncBatchJob`) para facturación asíncrona ✅
+- Soporte Multi-Sucursal (Branches) manejado por Middleware y Sesión global para admins ✅
 
 ### ✅ DASHBOARD WEB — FALCON BOOTSTRAP 5 ACTIVO
 - Falcon v3.16.0 en `/public/vendor/falcon/` ✅
 - `app.blade.php` carga assets Falcon correctamente ✅
 - AppLayout.vue con navbar-vertical nativo de Falcon ✅
 - Dashboard con cards KPI y iconos FontAwesome ✅
-- Configuración → Usuarios CRUD con modal Bootstrap + SweetAlert2 ✅
+- Configuración → Usuarios CRUD (con asignación obligatoria de sucursal) ✅
 - Configuración → Vehículos CRUD + toggle activo ✅
 - Configuración → Rutas + Tarifas (tabla expandible) ✅
-- Login Falcon card-style ✅ (pendiente implementar)
+- Configuración → Sucursales CRUD ✅
+- Operaciones → Encomiendas (CRUD y facturación de envíos) ✅
+- Operaciones → Panel de Sincronización (para reintentar boletas offline o con errores) ✅
+- Reportes → Liquidación de Caja (incluyendo boletos y encomiendas, con filtro de sucursal) ✅
+- Top Navbar → Selector global de sucursal para Administradores ✅
+- Login Falcon card-style ✅ (pendiente integración final si corresponde)
 
 ### ⚠️ ERROR MENOR CONOCIDO
 - `window.AnchorJS is not a constructor` en theme.js — no afecta funcionalidad
@@ -142,3 +148,15 @@ SOL Beta:  20603371292MODDATOS / moddatos
 - **Ruta Principal:** Trayecto completo de origen a destino final (ej. Huánuco - Puños).
 - **Tramos (Paradas intermedias):** Una ruta principal suele tener paradas (ej. Llata). Por eso, dentro de "Huánuco - Puños", se configuran tarifas para sub-trayectos (Huánuco → Llata, Llata → Puños) para pasajeros que suben o bajan a medio camino.
 - **Clase:** Nivel de servicio ofrecido (ej. "normal", "vip"). Permite tener precios distintos para el mismo tramo físico dependiendo de la comodidad o tipo de vehículo.
+
+## Lógica de Negocio — Sucursales (Branches)
+
+- **Sucursal Asignada:** Los usuarios (`counter`, `conductor`) operan dentro de su sucursal fija asignada.
+- **Admin Global:** El `admin` tiene un selector global en la barra superior (Top Navbar). La elección se guarda en la sesión (`active_branch_id`) y altera en tiempo real los registros que visualiza y emite (Reportes, Ventas, Encomiendas).
+- Todos los pasajes (Tickets) y Encomiendas (Packages) almacenan obligatoriamente el `branch_id` de la sucursal activa al momento de la venta.
+
+## Lógica de Negocio — Sincronización SUNAT (Jobs y Contingencias)
+
+- Al emitir un pasaje/encomienda, si hay conexión, se envía a SUNAT. Si falla, o si se marca como "contingencia", se guarda como `sincronizado = false`.
+- Existe un `SyncBatchJob` que procesa los documentos pendientes en segundo plano (`queue:work`).
+- Si el Job falla, o por decisión administrativa, en el **Panel de Facturación** (SyncPanel) existe la opción "Forzar Sincronización Global" para reintentar masivamente la emisión de todos los documentos pendientes.

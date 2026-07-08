@@ -34,6 +34,7 @@ class Package extends Model
         'emitido_en_contingencia',
         'emitido_en',
         'sincronizado_en',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -49,6 +50,11 @@ class Package extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function registradoPor(): BelongsTo

@@ -15,6 +15,16 @@ interface Ticket {
   numero_completo: string
 }
 
+interface Package {
+  id: number
+  emitido_en: string
+  remitente_nombre: string
+  destinatario_nombre: string
+  precio: string
+  estado_pago: string
+  numero_completo?: string
+}
+
 interface Props {
   resumen: {
     total_efectivo: number
@@ -26,6 +36,7 @@ interface Props {
     cantidad_encomiendas: number
   }
   tickets: Ticket[]
+  packages: Package[]
   filtros: { fecha: string; vehicle_id: number | null; user_id: number | null }
   vehiculos: { id: number; placa: string }[]
   conductores: { id: number; name: string }[]
@@ -179,6 +190,49 @@ const metodoBadge: Record<string, string> = {
                 <td colspan="4" class="text-end text-success">TOTAL</td>
                 <td class="text-end text-success fs-5">{{ formatMoney(resumen.total_general) }}</td>
                 <td colspan="2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla detalle encomiendas -->
+    <div class="card mt-4 mb-4">
+      <div class="card-header bg-light">
+        <h6 class="mb-0 fw-semibold">Detalle de encomiendas</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th>Hora</th>
+                <th>Remitente</th>
+                <th>Destinatario</th>
+                <th class="text-end">Monto</th>
+                <th class="text-center">Estado de Pago</th>
+                <th>CPE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="p in packages" :key="p.id">
+                <td class="small text-muted">{{ formatTime(p.emitido_en) }}</td>
+                <td class="small">{{ p.remitente_nombre }}</td>
+                <td class="small">{{ p.destinatario_nombre }}</td>
+                <td class="text-end fw-bold">S/ {{ Number(p.precio).toFixed(2) }}</td>
+                <td class="text-center">
+                  <span :class="['badge', p.estado_pago === 'pagado' ? 'bg-success' : 'bg-warning']">
+                    {{ p.estado_pago }}
+                  </span>
+                </td>
+                <td class="font-monospace small text-muted">{{ p.numero_completo ?? '—' }}</td>
+              </tr>
+              <tr v-if="packages.length === 0">
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="fas fa-box fs-2 d-block mb-2"></i>
+                  No hay registros de encomiendas.
+                </td>
               </tr>
             </tbody>
           </table>

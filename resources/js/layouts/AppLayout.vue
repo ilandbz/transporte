@@ -10,9 +10,22 @@ defineProps<Props>()
 const page = usePage()
 // auth.user viene del HandleInertiaRequests middleware
 const user = (page.props.auth as any)?.user ?? null
+const activeBranch = (page.props.auth as any)?.active_branch ?? null
+const allBranches = (page.props.auth as any)?.all_branches ?? []
 
 function isActive(path: string): boolean {
   return page.url.startsWith(path)
+}
+
+function switchBranch(branchId: number) {
+  import('@inertiajs/vue3').then(({ router }) => {
+    router.post(`/branches/switch/${branchId}`, {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        window.location.reload()
+      }
+    })
+  })
 }
 
 onMounted(() => {
@@ -138,6 +151,13 @@ onMounted(() => {
                   <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider"></div>
                 </div>
 
+                <Link class="nav-link" :class="{ active: isActive('/settings/branches') }" href="/settings/branches" role="button">
+                  <div class="d-flex align-items-center">
+                    <span class="nav-link-icon"><span class="fas fa-building" data-allow-mismatch></span></span>
+                    <span class="nav-link-text ps-1">Sucursales</span>
+                  </div>
+                </Link>
+
                 <Link class="nav-link" :class="{ active: isActive('/settings/users') }" href="/settings/users" role="button">
                   <div class="d-flex align-items-center">
                     <span class="nav-link-icon"><span class="fas fa-users" data-allow-mismatch></span></span>
@@ -186,6 +206,25 @@ onMounted(() => {
           </button>
           
           <ul class="navbar-nav navbar-nav-icons ms-auto flex-row align-items-center gap-2">
+            
+            <li class="nav-item dropdown px-2" v-if="user?.role === 'admin' && allBranches.length > 0">
+              <a class="nav-link dropdown-toggle px-0" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-building me-1"></i> {{ activeBranch?.name || 'Seleccionar Sucursal' }}
+              </a>
+              <div class="dropdown-menu dropdown-caret dropdown-menu-end py-0">
+                <div class="bg-white py-2 rounded-2">
+                  <a class="dropdown-item" href="#" v-for="branch in allBranches" :key="branch.id" @click.prevent="switchBranch(branch.id)">
+                    <i class="fas fa-check text-success me-2" v-if="activeBranch?.id === branch.id"></i>
+                    <span :class="{'ps-4': activeBranch?.id !== branch.id}">{{ branch.name }}</span>
+                  </a>
+                </div>
+              </div>
+            </li>
+            
+            <li class="nav-item px-2" v-else-if="activeBranch">
+              <span class="badge badge-subtle-primary"><i class="fas fa-building me-1"></i> {{ activeBranch.name }}</span>
+            </li>
+            
             <li class="nav-item">
               <span class="text-700 fw-semi-bold">{{ user?.name }}</span>
               <span class="badge bg-success ms-2">{{ user?.role }}</span>

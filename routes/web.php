@@ -12,6 +12,7 @@ use App\Http\Controllers\VehicleWebController;
 use App\Http\Controllers\UserWebController;
 use App\Http\Controllers\RouteWebController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\BranchWebController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -44,11 +45,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/billing/sync', [SyncPanelController::class, 'index'])->name('billing.sync');
     Route::post('/billing/sync/force', [SyncPanelController::class, 'forceSyncGlobal'])->name('billing.sync.force');
+    
+    Route::post('/branches/switch/{id}', \App\Http\Controllers\BranchSwitchController::class)->name('branches.switch');
+    
     Route::get('/settings/vehicles', [VehicleWebController::class, 'index'])->name('settings.vehicles');
     Route::post('/settings/vehicles', [VehicleWebController::class, 'store'])->name('settings.vehicles.store');
     Route::put('/settings/vehicles/{vehicle}', [VehicleWebController::class, 'update'])->name('settings.vehicles.update');
     Route::patch('/settings/vehicles/{vehicle}/toggle', [VehicleWebController::class, 'toggleActivo'])->name('settings.vehicles.toggle');
     
+    Route::get('/settings/branches', [BranchWebController::class, 'index'])->name('settings.branches');
+    Route::post('/settings/branches', [BranchWebController::class, 'store'])->name('settings.branches.store');
+    Route::put('/settings/branches/{branch}', [BranchWebController::class, 'update'])->name('settings.branches.update');
+    Route::patch('/settings/branches/{branch}/toggle', [BranchWebController::class, 'toggleActivo'])->name('settings.branches.toggle');
+
     Route::get('/settings/users', [UserWebController::class, 'index'])->name('settings.users');
     Route::post('/settings/users', [UserWebController::class, 'store'])->name('settings.users.store');
     Route::put('/settings/users/{user}', [UserWebController::class, 'update'])->name('settings.users.update');

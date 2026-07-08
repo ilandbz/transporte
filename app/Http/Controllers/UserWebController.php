@@ -11,8 +11,9 @@ class UserWebController extends Controller
 {
     public function index(): Response
     {
-        $users = User::orderBy('name')->get();
-        return Inertia::render('Settings/Users/Index', compact('users'));
+        $users = User::with('branch')->orderBy('name')->get();
+        $branches = \App\Models\Branch::where('is_active', true)->get();
+        return Inertia::render('Settings/Users/Index', compact('users', 'branches'));
     }
 
     public function store(Request $request)
@@ -22,6 +23,7 @@ class UserWebController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'role'     => 'required|in:admin,conductor,counter',
+            'branch_id'=> 'required|exists:branches,id',
         ]);
 
         User::create([
@@ -29,6 +31,7 @@ class UserWebController extends Controller
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role'     => $validated['role'],
+            'branch_id'=> $validated['branch_id'],
         ]);
 
         return back()->with('success', 'Usuario creado correctamente.');
@@ -41,12 +44,14 @@ class UserWebController extends Controller
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'role'     => 'required|in:admin,conductor,counter',
             'password' => 'nullable|string|min:8',
+            'branch_id'=> 'required|exists:branches,id',
         ]);
 
         $user->update([
             'name'  => $validated['name'],
             'email' => $validated['email'],
             'role'  => $validated['role'],
+            'branch_id' => $validated['branch_id'],
             ...($validated['password'] ? ['password' => Hash::make($validated['password'])] : []),
         ]);
 
