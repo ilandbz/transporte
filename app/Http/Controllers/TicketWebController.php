@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
@@ -39,15 +40,15 @@ class TicketWebController extends Controller
         }
 
         $tickets = $query->paginate(30)->withQueryString();
-        $filtros  = $request->only(['fecha','tipo_documento','sincronizado','placa']);
+        $filtros  = $request->only(['fecha', 'tipo_documento', 'sincronizado', 'placa']);
 
         $stats = [
             'total_hoy'       => Ticket::whereDate('emitido_en', today())->count(),
             'sin_sincronizar' => Ticket::where('sincronizado', false)->count(),
-            'aceptados_hoy'   => Ticket::whereDate('emitido_en', today())->where('cdr_status','0')->count(),
+            'aceptados_hoy'   => Ticket::whereDate('emitido_en', today())->where('cdr_status', '0')->count(),
         ];
 
-        return Inertia::render('Tickets/Index', compact('tickets','filtros','stats'));
+        return Inertia::render('Tickets/Index', compact('tickets', 'filtros', 'stats'));
     }
 
     public function store(Request $request)
@@ -122,7 +123,7 @@ class TicketWebController extends Controller
     public function print(Request $request, Ticket $ticket)
     {
         $ticket->load(['trip.vehicle', 'trip.route', 'vendedor']);
-        
+
         $format = $request->query('format', '80mm'); // '80mm' or 'a4'
 
         return view('print.ticket', compact('ticket', 'format'));
@@ -153,7 +154,7 @@ class TicketWebController extends Controller
         $ticket->documento_facturacion = $validated['documento_facturacion'];
         $ticket->nombre_facturacion = $validated['nombre_facturacion'];
         $ticket->estado_pago = 'pagado';
-        
+
         // Save client info too
         Client::updateOrCreate(
             ['documento' => $ticket->documento_facturacion],
@@ -243,4 +244,38 @@ class TicketWebController extends Controller
         return back()->with('success', 'Reservación confirmada correctamente.');
     }
 
+    public function anular(Request $request, Ticket $ticket)
+    {
+        $validated = $request->validate([
+            'motivo' => 'required|string|min:3|max:100',
+        ]);
+
+        if ($ticket->estado === 'anulado') {
+            return back()->with('error', 'El ticket ya está anulado.');
+        }
+
+        if (!in_array($ticket->tipo_documento, ['BOLETA', 'FACTURA']) || !$ticket->sincronizado || !$ticket->serie_cpe) {
+            // Anulación interna (no requiere Greenter baja)
+            $ticket->update([
+                'estado' => 'anulado',
+                'estado_pago' => 'anulado'
+            ]);
+            return back()->with('success', 'Ticket interno anulado correctamente.');
+        }
+
+        // Anulación con SUNAT (Comunicación de baja)
+        $res = $this->greenter->anularComprobante($ticket, $validated['motivo']);
+
+        if ($res['status']) {
+            $ticket->update([
+                'estado' => 'anulado',
+                'estado_pago' => 'anulado',
+                'cdr_status' => $res['cdr'],
+                'cdr_descripcion' => $res['descripcion'],
+            ]);
+            return back()->with('success', 'Comprobante anulado y comunicado a SUNAT correctamente.');
+        }
+
+        return back()->with('error', 'Error al comunicar baja a SUNAT: ' . ($res['error'] ?? $res['descripcion'] ?? 'Error desconocido'));
+    }
 }

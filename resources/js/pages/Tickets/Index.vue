@@ -63,6 +63,60 @@ const formatDate = (dateStr: string) => {
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+const anularTicket = async (ticket: any) => {
+  if (ticket.estado === 'anulado') return;
+  
+  const result = await Swal.fire({
+    title: 'Anular Comprobante',
+    text: 'Ingrese el motivo de la anulación (ej. Error en digitación)',
+    input: 'text',
+    inputAttributes: {
+      autocapitalize: 'off',
+      minlength: '3',
+      maxlength: '100'
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Sí, Anular',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#e63757',
+    showLoaderOnConfirm: true,
+    preConfirm: (motivo: string) => {
+      if (!motivo || motivo.length < 3) {
+        Swal.showValidationMessage('El motivo debe tener al menos 3 caracteres')
+        return false
+      }
+      return new Promise((resolve) => {
+        router.post(`/tickets/${ticket.id}/anular`, { motivo }, {
+          preserveScroll: true,
+          onSuccess: (page) => {
+            // @ts-ignore
+            if (page.props.flash?.error) {
+              // @ts-ignore
+              Swal.showValidationMessage(page.props.flash.error)
+              resolve(false)
+            } else {
+              resolve(true)
+            }
+          },
+          onError: (errors) => {
+            Swal.showValidationMessage(errors.motivo || 'Error al anular')
+            resolve(false)
+          }
+        })
+      })
+    },
+    allowOutsideClick: () => !Swal.isLoading()
+  })
+
+  if (result.isConfirmed && result.value) {
+    Swal.fire({
+      title: '¡Anulado!',
+      text: 'El comprobante ha sido anulado correctamente.',
+      icon: 'success'
+    })
+  }
+}
 </script>
 
 <template>
@@ -123,7 +177,8 @@ const formatDate = (dateStr: string) => {
                 <th class="text-center py-3">Placa</th>
                 <th class="text-center py-3">Clase</th>
                 <th class="text-end py-3">Monto</th>
-                <th class="text-center py-3">Sync</th>
+                <th class="text-center py-3">Estado SUNAT</th>
+                <th class="py-3">Mensaje SUNAT</th>
                 <th class="py-3">Fecha</th>
                 <th class="text-center py-3 pe-3">Acciones</th>
               </tr>
@@ -168,9 +223,17 @@ const formatDate = (dateStr: string) => {
                     {{ t.estado_pago === 'pagado' ? 'CANCELADO' : 'PENDIENTE' }}
                   </span>
                 </td>
-                <td class="text-center fs-2">
-                  <span v-if="t.sincronizado" title="Sincronizado" class="text-success"><i class="fas fa-check-circle"></i></span>
-                  <span v-else title="No sincronizado" class="text-warning"><i class="fas fa-clock"></i></span>
+                <td class="text-center">
+                  <span v-if="t.estado === 'anulado'" class="badge bg-danger">ANULADO</span>
+                  <span v-else-if="t.tipo_documento === 'TICKET_INTERNO'" class="badge bg-secondary">INTERNO</span>
+                  <span v-else-if="t.cdr_status === '0'" class="badge bg-success">ACEPTADO</span>
+                  <span v-else-if="t.cdr_status === 'anulado'" class="badge bg-danger">BAJA</span>
+                  <span v-else-if="t.cdr_status" class="badge bg-danger">RECHAZADO</span>
+                  <span v-else-if="t.sincronizado" class="badge bg-success">SINC.</span>
+                  <span v-else class="badge bg-warning">PENDIENTE</span>
+                </td>
+                <td class="fs--2 text-muted" style="max-width: 200px; white-space: normal;">
+                  {{ t.cdr_descripcion || (t.tipo_documento === 'TICKET_INTERNO' ? 'Uso interno' : (t.sincronizado ? 'Enviado correctamente' : 'Pendiente de envío')) }}
                 </td>
                 <td class="fs--1 text-secondary">
                   {{ formatDate(t.emitido_en) }}
@@ -192,10 +255,10 @@ const formatDate = (dateStr: string) => {
                       <i class="fas fa-exchange-alt"></i>
                     </button>
                     
-                    <button v-if="!t.trip || t.trip.estado === 'abierto'" class="btn btn-sm btn-link text-danger p-0 shadow-none" title="Eliminar Ticket" @click="deleteTicket(t)">
-                      <i class="fas fa-trash"></i>
+                    <button v-if="t.estado !== 'anulado' && (!t.trip || t.trip.estado === 'abierto')" class="btn btn-sm btn-link text-danger p-0 shadow-none ms-1" title="Anular Comprobante" @click="anularTicket(t)">
+                      <i class="fas fa-ban"></i> Anular
                     </button>
-                    <span v-else class="badge bg-secondary" title="El viaje ya partió o finalizó">Viajando</span>
+                    <span v-else-if="t.estado !== 'anulado'" class="badge bg-secondary" title="El viaje ya partió o finalizó">Viajando</span>
                   </div>
                 </td>
               </tr>

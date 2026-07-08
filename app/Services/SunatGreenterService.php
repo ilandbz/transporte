@@ -13,6 +13,8 @@ use Greenter\Model\Despatch\DespatchDetail;
 use Greenter\Model\Sale\Invoice;
 use Greenter\Model\Sale\Legend;
 use Greenter\Model\Sale\SaleDetail;
+use Greenter\Model\Voided\Voided;
+use Greenter\Model\Voided\VoidedDetail;
 use Greenter\See;
 use Greenter\Ws\Services\SunatEndpoints;
 use Illuminate\Support\Facades\DB;
@@ -379,6 +381,60 @@ class SunatGreenterService
 
         } catch (\Exception $e) {
             return ['ok' => false, 'mensaje' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Anular un comprobante electrónico (Comunicación de Baja)
+     */
+    public function anularComprobante(Ticket $ticket, string $motivo): array
+    {
+        try {
+            $tipoDoc = $ticket->tipo_documento === 'FACTURA' ? '01' : '03';
+            
+            // Usaremos el ID del ticket como correlativo diario para garantizar unicidad
+            $correlativoBaja = str_pad((string)($ticket->id % 99999), 5, '0', STR_PAD_LEFT);
+
+            $detail = (new VoidedDetail())
+                ->setTipoDoc($tipoDoc)
+                ->setSerie($ticket->serie_cpe)
+                ->setCorrelativo((string) $ticket->correlativo_cpe)
+                ->setDesMotivoBaja($motivo);
+
+            $voided = (new Voided())
+                ->setCorrelativo($correlativoBaja)
+                ->setFecGeneracion(new \DateTime($ticket->emitido_en))
+                ->setFecComunicacion(new \DateTime())
+                ->setCompany($this->buildCompany())
+                ->setDetails([$detail]);
+
+            $result = $this->see->send($voided);
+
+            // Guardar XML firmado de la baja
+            $xmlPath = storage_path("app/cpe/BAJA-{$ticket->serie_cpe}-{$ticket->correlativo_cpe}.xml");
+            @mkdir(dirname($xmlPath), 0755, true);
+            file_put_contents($xmlPath, $this->see->getFactory()->getLastXml());
+
+            if (!$result->isSuccess()) {
+                Log::error("Greenter error conexión baja: " . $result->getError()->getMessage());
+                return ['status' => false, 'cdr' => null, 'error' => $result->getError()->getMessage()];
+            }
+
+            $ticketCdr = $result->getCdrResponse();
+            $code = (int) $ticketCdr->getCode();
+
+            Log::info("BAJA {$ticket->serie_cpe}-{$ticket->correlativo_cpe}: CDR code={$code} — {$ticketCdr->getDescription()}");
+
+            return [
+                'status'      => $code === 0,
+                'cdr'         => (string) $code,
+                'descripcion' => $ticketCdr->getDescription(),
+                'notas'       => $ticketCdr->getNotes(),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("SunatGreenterService::anularComprobante — " . $e->getMessage());
+            return ['status' => false, 'cdr' => null, 'error' => $e->getMessage()];
         }
     }
 }

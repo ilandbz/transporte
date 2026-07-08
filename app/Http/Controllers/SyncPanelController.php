@@ -42,4 +42,15 @@ class SyncPanelController extends Controller
             'monto_total'       => (float) Ticket::where('sincronizado', false)->sum('precio'),
         ]);
     }
+
+    public function forceSyncGlobal()
+    {
+        $tickets = Ticket::where('sincronizado', false)->get();
+        
+        foreach ($tickets as $ticket) {
+            \App\Jobs\SyncBatchJob::dispatch($ticket);
+        }
+
+        return back()->with('success', 'Se ha iniciado la sincronización de ' . $tickets->count() . ' tickets.');
+    }
 }

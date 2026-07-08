@@ -20,15 +20,17 @@ class VehicleWebController extends Controller
             'placa'              => 'required|string|max:10|unique:vehicles,placa',
             'marca'              => 'nullable|string|max:50',
             'modelo'             => 'nullable|string|max:50',
-            'tipo'               => 'required|in:minivan,bus,coaster',
+            'tipo'               => 'required|in:minivan,bus,coaster,auto',
             'capacidad_asientos' => 'required|integer|min:1|max:60',
+            'layout_asientos'    => 'nullable|array',
         ]);
 
-        // Generar layout_asientos automático según capacidad
-        $validated['layout_asientos'] = $this->generarLayout(
-            $validated['capacidad_asientos'],
-            $validated['tipo']
-        );
+        if (empty($validated['layout_asientos'])) {
+            $validated['layout_asientos'] = $this->generarLayout(
+                $validated['capacidad_asientos'],
+                $validated['tipo']
+            );
+        }
 
         Vehicle::create($validated);
         return back()->with('success', 'Vehículo registrado.');
@@ -40,8 +42,9 @@ class VehicleWebController extends Controller
             'placa'              => 'required|string|max:10|unique:vehicles,placa,' . $vehicle->id,
             'marca'              => 'nullable|string|max:50',
             'modelo'             => 'nullable|string|max:50',
-            'tipo'               => 'required|in:minivan,bus,coaster',
+            'tipo'               => 'required|in:minivan,bus,coaster,auto',
             'capacidad_asientos' => 'required|integer|min:1|max:60',
+            'layout_asientos'    => 'nullable|array',
             'activo'             => 'boolean',
         ]);
 
@@ -65,11 +68,19 @@ class VehicleWebController extends Controller
             ];
         }
         
-        $filas    = (int) ceil($capacidad / ($tipo === 'minivan' ? 2 : 4));
+        $columnas = 4;
+        if ($tipo === 'minivan') $columnas = 2;
+        else if ($tipo === 'auto') $columnas = 3;
+
+        $pasillo = 2;
+        if ($tipo === 'minivan' || $tipo === 'auto') $pasillo = null;
+
+        $filas = (int) ceil($capacidad / $columnas);
+        
         return [
             'filas'    => $filas,
-            'columnas' => $tipo === 'minivan' ? 2 : 4,
-            'pasillo'  => $tipo === 'minivan' ? null : 2,
+            'columnas' => $columnas,
+            'pasillo'  => $pasillo,
             'asientos' => $asientos,
         ];
     }

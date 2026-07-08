@@ -3,6 +3,8 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { ref } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 
+declare const Swal: any
+
 interface Ticket {
   id: number
   uuid_local: string
@@ -49,6 +51,25 @@ const formatDate = (dateStr: string) => {
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
+
+const forceSync = () => {
+  Swal.fire({
+    title: '¿Forzar Sincronización?',
+    text: 'Se enviarán todos los tickets pendientes a SUNAT de manera asíncrona.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, sincronizar',
+    cancelButtonText: 'Cancelar'
+  }).then((result: any) => {
+    if (result.isConfirmed) {
+      router.post('/billing/sync/force', {}, {
+        onSuccess: () => {
+          Swal.fire('Iniciado', 'El proceso de sincronización se ha encolado correctamente.', 'success')
+        }
+      })
+    }
+  })
+}
 </script>
 
 <template>
@@ -64,7 +85,7 @@ const formatDate = (dateStr: string) => {
           <p class="mb-0 fw-medium">Monto total en riesgo: S/ {{ monto_total.toFixed(2) }}</p>
         </div>
       </div>
-      <button class="btn btn-danger shadow-sm fw-semibold">
+      <button @click="forceSync" :disabled="total_pendientes === 0" class="btn btn-danger shadow-sm fw-semibold">
         Forzar Sincronización Global
       </button>
     </div>

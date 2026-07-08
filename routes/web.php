@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tickets/{ticket}/print', [TicketWebController::class, 'print'])->name('tickets.print');
     Route::post('/tickets/{ticket}/convert-cpe', [TicketWebController::class, 'convertCpe'])->name('tickets.convertCpe');
     Route::patch('/tickets/{ticket}/toggle-payment', [TicketWebController::class, 'togglePayment'])->name('tickets.togglePayment');
+    Route::post('/tickets/{ticket}/anular', [TicketWebController::class, 'anular'])->name('tickets.anular');
     Route::get('/packages', [PackageWebController::class, 'index'])->name('packages.index');
     Route::post('/packages', [PackageWebController::class, 'store'])->name('packages.store');
     Route::get('/packages/{package}/print', [PackageWebController::class, 'print'])->name('packages.print');
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('clientes', ClientController::class)->parameters(['clientes' => 'cliente'])->except(['create', 'edit', 'show']);
 
     Route::get('/billing/sync', [SyncPanelController::class, 'index'])->name('billing.sync');
+    Route::post('/billing/sync/force', [SyncPanelController::class, 'forceSyncGlobal'])->name('billing.sync.force');
     Route::get('/settings/vehicles', [VehicleWebController::class, 'index'])->name('settings.vehicles');
     Route::post('/settings/vehicles', [VehicleWebController::class, 'store'])->name('settings.vehicles.store');
     Route::put('/settings/vehicles/{vehicle}', [VehicleWebController::class, 'update'])->name('settings.vehicles.update');

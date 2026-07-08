@@ -52,7 +52,11 @@ class TripWebController extends Controller
     public function destroy(Trip $trip)
     {
         if ($trip->tickets()->count() > 0) {
-            return back()->with('error', 'No se puede eliminar un viaje que ya tiene tickets vendidos.');
+            return back()->withErrors(['error' => 'No se puede eliminar un viaje que ya tiene tickets vendidos.']);
+        }
+
+        if ($trip->packages()->count() > 0) {
+            return back()->withErrors(['error' => 'No se puede eliminar un viaje que ya tiene encomiendas registradas.']);
         }
 
         $trip->delete();

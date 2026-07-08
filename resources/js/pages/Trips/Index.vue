@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router, useForm } from '@inertiajs/vue3'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 
 declare const flatpickr: any
 declare const bootstrap: any
@@ -30,7 +30,15 @@ interface Trip {
   conductor: { name: string }
   tickets_count: number
   asientos_ocupados: number[]
-  vehicle: { capacidad_asientos: number }
+  vehicle: { 
+    capacidad_asientos: number
+    layout_asientos?: {
+      filas: number
+      columnas: number
+      pasillo: number | null
+      asientos: { numero: number; clase: string }[]
+    }
+  }
 }
 
 interface Props {
@@ -168,7 +176,7 @@ const ticketForm = useForm({
   dni_pasajero: '',
   nombre_pasajero: '',
   telefono_pasajero: '',
-  estado_pago: 'pendiente',
+  estado_pago: 'pagado',
   metodo_pago: 'efectivo',
   tipo_documento: 'BOLETA',
   facturar_tercero: false,
@@ -179,11 +187,67 @@ const ticketForm = useForm({
   estado: 'confirmado',
 })
 
+const isPending = computed(() => ticketForm.estado_pago === 'pendiente')
+
+const isFormValid = computed(() => {
+  if (ticketForm.processing) return false;
+  
+  if (ticketForm.estado_pago === 'pagado') {
+    if (ticketForm.tipo_documento === 'FACTURA') {
+      const ruc = ticketForm.documento_facturacion || '';
+      const razonSocial = ticketForm.nombre_facturacion || '';
+      if (ruc.length !== 11 || !/^\d+$/.test(ruc) || razonSocial.trim() === '') {
+        return false;
+      }
+    } else if (ticketForm.tipo_documento === 'BOLETA' && ticketForm.facturar_tercero) {
+      const dni = ticketForm.documento_facturacion || '';
+      const nombre = ticketForm.nombre_facturacion || '';
+      if ((dni.length !== 8 && dni.length !== 11) || nombre.trim() === '') {
+        return false;
+      }
+    }
+    if (!ticketForm.metodo_pago || ticketForm.metodo_pago === 'pendiente') {
+      return false;
+    }
+  }
+  return true;
+})
+
+const submitBtnText = computed(() => {
+  return isPending.value ? 'Confirmar Reserva' : 'Vender Pasaje / Emitir CPE'
+})
+
+const submitBtnClass = computed(() => {
+  return isPending.value ? 'btn-warning text-dark' : 'btn-success'
+})
+
+watch(() => ticketForm.estado_pago, (newVal) => {
+  if (newVal === 'pendiente') {
+    ticketForm.tipo_documento = 'TICKET_INTERNO'
+    ticketForm.metodo_pago = 'pendiente'
+  } else if (newVal === 'pagado') {
+    if (ticketForm.tipo_documento === 'TICKET_INTERNO') {
+      ticketForm.tipo_documento = 'BOLETA'
+    }
+    if (ticketForm.metodo_pago === 'pendiente') {
+      ticketForm.metodo_pago = 'efectivo'
+    }
+  }
+})
+
 watch(() => ticketForm.tipo_documento, (newVal) => {
   if (newVal === 'BOLETA' || newVal === 'FACTURA') {
     ticketForm.estado_pago = 'pagado'
   }
 })
+
+function executeDynamicSubmit() {
+  if (ticketForm.estado_pago === 'pendiente') {
+    submitReservation()
+  } else {
+    submitTicket()
+  }
+}
 
 function openTicketModal(trip: Trip) {
   activeTrip.value = trip
@@ -207,6 +271,19 @@ function openTicketModal(trip: Trip) {
 function getTicketForSeat(n: number) {
   return activeTrip.value?.tickets?.find(t => t.numero_asiento === n)
 }
+
+const activeLayout = computed(() => {
+  if (!activeTrip.value?.vehicle?.layout_asientos) return null;
+  const layout = activeTrip.value.vehicle.layout_asientos;
+  if (typeof layout === 'string') {
+    try {
+      return JSON.parse(layout);
+    } catch (e) {
+      return null;
+    }
+  }
+  return layout;
+});
 
 function handleSeatClick(n: number) {
   const ticket = getTicketForSeat(n)
@@ -399,6 +476,7 @@ function togglePayment(ticket: any) {
               <tr>
                 <th>Manifiesto</th>
                 <th>Placa</th>
+                <th>Tipo</th>
                 <th>Ruta</th>
                 <th>Conductor</th>
                 <th>Salida</th>
@@ -412,6 +490,7 @@ function togglePayment(ticket: any) {
               <tr v-for="t in trips" :key="t.id">
                 <td class="font-monospace small text-muted">{{ t.numero_manifiesto ?? '—' }}</td>
                 <td class="font-monospace fw-bold">{{ t.placa_vehiculo }}</td>
+                <td>{{ t.vehicle?.tipo }}</td>
                 <td>{{ t.route.nombre }}</td>
                 <td>{{ t.conductor.name }}</td>
                 <td>{{ formatTime(t.fecha_salida) }}</td>
@@ -437,7 +516,7 @@ function togglePayment(ticket: any) {
                 </td>
               </tr>
               <tr v-if="trips.length === 0">
-                <td colspan="8" class="text-center text-muted py-5">
+                <td colspan="10" class="text-center text-muted py-5">
                   <i class="fas fa-calendar-times fs-2 d-block mb-2"></i>
                   No hay viajes para esta fecha.
                 </td>
@@ -528,33 +607,81 @@ function togglePayment(ticket: any) {
               </div>
             </div>
             
-            <!-- Grid de Asientos -->
+              <!-- Grid de Asientos -->
             <div class="mb-4 bg-light p-3 rounded" v-if="activeTrip">
               <label class="form-label d-block text-center fw-bold mb-3"><i class="fas fa-bus"></i> Seleccionar Asiento</label>
               
-              <div class="d-flex justify-content-center mb-3 gap-3">
+              <div class="d-flex justify-content-center mb-4 gap-3">
                 <span class="badge bg-secondary"><i class="fas fa-couch"></i> Confirmado</span>
                 <span class="badge bg-warning text-dark"><i class="fas fa-couch"></i> Reservado</span>
                 <span class="badge bg-success"><i class="fas fa-couch"></i> Seleccionado</span>
                 <span class="badge bg-white text-dark border"><i class="fas fa-couch"></i> Libre</span>
               </div>
 
-              <div class="d-flex flex-wrap gap-2 justify-content-center mx-auto" style="max-width: 350px;">
+              <!-- Realistic Seat Layout -->
+              <div v-if="activeLayout" class="d-flex justify-content-center">
+                <div class="seat-container border rounded bg-white p-4 shadow-sm" style="max-width: 500px; position: relative;">
+                  
+                  <!-- Steering Wheel Area (Front) -->
+                  <div class="d-flex justify-content-end mb-4 border-bottom pb-2">
+                    <div class="text-center text-muted fw-bold small">
+                      FRENTE <i class="fas fa-steering-wheel ms-1"></i>
+                    </div>
+                  </div>
+
+                  <!-- Seats Grid -->
+                  <div class="d-grid gap-3" 
+                       :style="{
+                         'grid-template-columns': `repeat(${activeLayout.columnas + (activeLayout.pasillo ? 1 : 0)}, auto)`,
+                         'justify-content': 'center'
+                       }">
+                    
+                    <template v-for="(seat, index) in activeLayout.asientos" :key="index">
+                      
+                      <!-- Add aisle space if needed before this seat -->
+                      <div v-if="activeLayout.pasillo && (index % activeLayout.columnas) === activeLayout.pasillo" 
+                           class="d-flex align-items-center justify-content-center" 
+                           style="width: 30px;">
+                      </div>
+
+                      <div v-if="!seat.numero || seat.clase === 'empty'" style="width: 50px; height: 50px;"></div>
+                      <button v-else type="button" class="btn btn-sm d-flex flex-column align-items-center justify-content-center shadow-none border"
+                              :class="{
+                                'btn-secondary text-white': getTicketForSeat(seat.numero)?.estado === 'confirmado',
+                                'btn-warning text-dark': getTicketForSeat(seat.numero)?.estado === 'reservado',
+                                'btn-success text-white': ticketForm.numero_asiento === seat.numero,
+                                'bg-light text-dark': !activeTrip.asientos_ocupados.includes(seat.numero) && ticketForm.numero_asiento !== seat.numero
+                              }"
+                              @click="handleSeatClick(seat.numero)"
+                              style="width: 50px; height: 50px; border-radius: 8px; transition: all 0.2s;">
+                        <i class="fas fa-couch mb-1" :class="seat.clase === 'vip' ? 'text-primary' : ''" style="font-size: 1.2rem;"></i>
+                        <span style="font-size: 0.75rem; font-weight: bold; line-height: 1;">{{ seat.numero }}</span>
+                      </button>
+                      
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fallback layout for vehicles without layout_asientos -->
+              <div v-else class="d-flex flex-wrap gap-2 justify-content-center mx-auto" style="max-width: 350px;">
                 <template v-for="n in activeTrip.vehicle.capacidad_asientos" :key="n">
-                  <button type="button" class="btn btn-sm d-flex align-items-center justify-content-center shadow-none"
+                  <button type="button" class="btn btn-sm d-flex flex-column align-items-center justify-content-center shadow-none border"
                           :class="{
-                            'btn-secondary': getTicketForSeat(n)?.estado === 'confirmado',
+                            'btn-secondary text-white': getTicketForSeat(n)?.estado === 'confirmado',
                             'btn-warning text-dark': getTicketForSeat(n)?.estado === 'reservado',
-                            'btn-success': ticketForm.numero_asiento === n,
-                            'btn-outline-secondary bg-white': !activeTrip.asientos_ocupados.includes(n) && ticketForm.numero_asiento !== n
+                            'btn-success text-white': ticketForm.numero_asiento === n,
+                            'bg-light text-dark': !activeTrip.asientos_ocupados.includes(n) && ticketForm.numero_asiento !== n
                           }"
                           @click="handleSeatClick(n)"
-                          style="width: 45px; height: 45px; font-weight: bold; font-size: 1.1rem;">
-                    {{ n }}
+                          style="width: 50px; height: 50px; border-radius: 8px;">
+                    <i class="fas fa-couch mb-1" style="font-size: 1.2rem;"></i>
+                    <span style="font-size: 0.75rem; font-weight: bold; line-height: 1;">{{ n }}</span>
                   </button>
                 </template>
               </div>
-              <div v-if="ticketForm.errors.numero_asiento" class="text-danger text-center small mt-2 fw-medium">
+
+              <div v-if="ticketForm.errors.numero_asiento" class="text-danger text-center small mt-3 fw-medium">
                 {{ ticketForm.errors.numero_asiento }}
               </div>
             </div>
@@ -591,7 +718,8 @@ function togglePayment(ticket: any) {
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Método de Pago</label>
-                <select v-model="ticketForm.metodo_pago" class="form-select" :class="{ 'is-invalid': ticketForm.errors.metodo_pago }">
+                <select v-model="ticketForm.metodo_pago" class="form-select" :class="{ 'is-invalid': ticketForm.errors.metodo_pago }" :disabled="isPending">
+                  <option value="pendiente" v-if="isPending">Por Definir</option>
                   <option value="efectivo">Efectivo</option>
                   <option value="yape">Yape</option>
                   <option value="plin">Plin</option>
@@ -604,9 +732,9 @@ function togglePayment(ticket: any) {
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label">Tipo de Documento</label>
-                <select v-model="ticketForm.tipo_documento" class="form-select" :class="{ 'is-invalid': ticketForm.errors.tipo_documento }">
-                  <option value="BOLETA">Boleta Electrónica</option>
-                  <option value="FACTURA">Factura Electrónica</option>
+                <select v-model="ticketForm.tipo_documento" class="form-select" :class="{ 'is-invalid': ticketForm.errors.tipo_documento }" :disabled="isPending">
+                  <option value="BOLETA" v-if="!isPending">Boleta Electrónica</option>
+                  <option value="FACTURA" v-if="!isPending">Factura Electrónica</option>
                   <option value="TICKET_INTERNO">Ticket Interno (No SUNAT)</option>
                 </select>
                 <div class="invalid-feedback">{{ ticketForm.errors.tipo_documento }}</div>
@@ -642,17 +770,17 @@ function togglePayment(ticket: any) {
             </div>
 
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <div class="modal-footer d-flex justify-content-between">
+            <div>
+              <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+              <button v-if="ticketForm.id" type="button" class="btn btn-outline-danger" @click="anularReserva" :disabled="ticketForm.processing">
+                <i class="fas fa-trash-alt me-1"></i> Anular Reserva
+              </button>
+            </div>
             
-            <template v-if="ticketForm.id">
-              <button type="button" class="btn btn-danger" @click="anularReserva" :disabled="ticketForm.processing">Anular Reserva</button>
-              <button type="submit" class="btn btn-success" :disabled="ticketForm.processing">Confirmar Venta</button>
-            </template>
-            <template v-else>
-              <button type="button" class="btn btn-warning text-dark" @click="submitReservation" :disabled="ticketForm.processing">Solo Reservar</button>
-              <button type="submit" class="btn btn-success" :disabled="ticketForm.processing">Vender Pasaje</button>
-            </template>
+            <button type="submit" class="btn" :class="submitBtnClass" :disabled="!isFormValid" @click.prevent="executeDynamicSubmit">
+              <i class="fas" :class="isPending ? 'fa-bookmark' : 'fa-check-circle'"></i> {{ submitBtnText }}
+            </button>
           </div>
         </form>
       </div>

@@ -126,7 +126,7 @@ const deleteClient = (id: number) => {
           <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden">
             <thead class="bg-200 text-900">
               <tr>
-                <th class="sort pe-1 align-middle white-space-nowrap">Documento</th>
+                <th class="sort pe-1 align-middle white-space-nowrap">DNI/RUC</th>
                 <th class="sort pe-1 align-middle white-space-nowrap">Nombre / Razón Social</th>
                 <th class="sort pe-1 align-middle white-space-nowrap">Teléfono</th>
                 <th class="sort pe-1 align-middle white-space-nowrap">Email</th>

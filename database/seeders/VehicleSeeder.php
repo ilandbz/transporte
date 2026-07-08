@@ -55,6 +55,51 @@ class VehicleSeeder extends Seeder
             }, range(1, 40)),
         ]);
 
+        $autoLayoutNormal = json_encode([
+            'filas' => 2,
+            'columnas' => 3,
+            'pasillo' => null,
+            'asientos' => [
+                ['numero' => null, 'clase' => 'empty'],
+                ['numero' => null, 'clase' => 'empty'],
+                ['numero' => 1, 'clase' => 'normal'],
+                ['numero' => 2, 'clase' => 'normal'],
+                ['numero' => 3, 'clase' => 'normal'],
+                ['numero' => 4, 'clase' => 'normal'],
+            ],
+        ]);
+
+        // Autos (4 pasajeros)
+        Vehicle::create([
+            'placa' => 'XWZ-123',
+            'marca' => 'Toyota',
+            'modelo' => 'Yaris',
+            'tipo' => 'auto',
+            'capacidad_asientos' => 4,
+            'layout_asientos' => $autoLayoutNormal,
+            'activo' => true,
+        ]);
+
+        Vehicle::create([
+            'placa' => 'YZA-456',
+            'marca' => 'Kia',
+            'modelo' => 'Rio',
+            'tipo' => 'auto',
+            'capacidad_asientos' => 4,
+            'layout_asientos' => $autoLayoutNormal,
+            'activo' => true,
+        ]);
+
+        Vehicle::create([
+            'placa' => 'BCD-789',
+            'marca' => 'Hyundai',
+            'modelo' => 'Accent',
+            'tipo' => 'auto',
+            'capacidad_asientos' => 4,
+            'layout_asientos' => $autoLayoutNormal,
+            'activo' => true,
+        ]);
+
         // Minivans (10 pasajeros)
         Vehicle::create([
             'placa' => 'ABC-123',
