@@ -73,7 +73,7 @@ class CatalogController extends Controller
      */
     public function branches(Request $request): JsonResponse
     {
-        $branches = Branch::where('activo', true)->get();
+        $branches = Branch::where('is_active', true)->get();
 
         return response()->json($branches);
     }
