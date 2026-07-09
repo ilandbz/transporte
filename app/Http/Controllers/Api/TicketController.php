@@ -7,12 +7,16 @@ use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
 use App\Models\Trip;
 use App\Services\TicketService;
+use App\Services\SunatGreenterService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class TicketController extends Controller
 {
-    public function __construct(private TicketService $ticketService) {}
+    public function __construct(
+        private TicketService $ticketService,
+        private SunatGreenterService $greenter
+    ) {}
 
     // POST /api/v1/tickets — Vender pasaje
     public function store(Request $request): JsonResponse
@@ -50,5 +54,45 @@ class TicketController extends Controller
     public function show(Ticket $ticket): JsonResponse
     {
         return response()->json(new TicketResource($ticket->load(['trip.route', 'trip.vehicle'])));
+    }
+
+    // PATCH /api/v1/tickets/{ticket}/anular
+    public function anular(Request $request, Ticket $ticket): JsonResponse
+    {
+        $validated = $request->validate([
+            'motivo' => 'required|string|min:3|max:100',
+        ]);
+
+        if ($ticket->estado === 'anulado') {
+            return response()->json(['error' => 'El ticket ya está anulado.'], 400);
+        }
+
+        if (!in_array($ticket->tipo_documento, ['BOLETA', 'FACTURA']) || !$ticket->sincronizado || !$ticket->serie_cpe) {
+            // Anulación interna (no requiere Greenter baja)
+            $ticket->update([
+                'estado' => 'anulado',
+                'estado_pago' => 'anulado'
+            ]);
+            $ticket->trip->liberarAsiento($ticket->numero_asiento);
+            return response()->json(new TicketResource($ticket));
+        }
+
+        // Anulación con SUNAT (Comunicación de baja)
+        $res = $this->greenter->anularComprobante($ticket, $validated['motivo']);
+
+        if ($res['status']) {
+            $ticket->update([
+                'estado' => 'anulado',
+                'estado_pago' => 'anulado',
+                'cdr_status' => $res['cdr'],
+                'cdr_descripcion' => $res['descripcion'],
+            ]);
+            $ticket->trip->liberarAsiento($ticket->numero_asiento);
+            return response()->json(new TicketResource($ticket));
+        }
+
+        return response()->json([
+            'error' => 'Error al comunicar baja a SUNAT: ' . ($res['error'] ?? $res['descripcion'] ?? 'Error desconocido')
+        ], 500);
     }
 }

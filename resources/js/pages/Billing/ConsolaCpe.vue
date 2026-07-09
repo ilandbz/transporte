@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router } from '@inertiajs/vue3'
-import StatusBadge from '@/Components/StatusBadge.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 
 interface Props {
   tickets: {

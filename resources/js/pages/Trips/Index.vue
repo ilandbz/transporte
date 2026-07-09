@@ -54,7 +54,7 @@ const dateRef = ref<HTMLInputElement | null>(null)
 let tripModal: any = null
 let ticketModal: any = null
 
-import PackageFormModal from '@/Components/PackageFormModal.vue'
+import PackageFormModal from '@/components/PackageFormModal.vue'
 const packageModal = ref<InstanceType<typeof PackageFormModal> | null>(null)
 
 onMounted(() => {

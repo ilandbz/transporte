@@ -11,6 +11,37 @@ use Illuminate\Http\JsonResponse;
 
 class TripController extends Controller
 {
+    // GET /api/v1/trips
+    public function index(Request $request): JsonResponse
+    {
+        $query = Trip::with(['route', 'vehicle', 'conductor']);
+
+        if ($request->has('estado')) {
+            $query->where('estado', $request->query('estado'));
+        }
+
+        if ($request->query('mine') == '1') {
+            $query->where('user_id', auth()->id());
+        }
+
+        if ($request->has('fecha')) {
+            $query->whereDate('fecha_salida', $request->query('fecha'));
+        }
+
+        $trips = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json($trips);
+    }
+
+    // GET /api/v1/trips/{trip}
+    public function show(Trip $trip): JsonResponse
+    {
+        $trip->load(['route', 'vehicle', 'conductor']);
+        $trip->loadCount(['tickets', 'packages']);
+
+        return response()->json($trip);
+    }
+
     // POST /api/v1/trips — Abrir manifiesto
     public function store(Request $request): JsonResponse
     {
@@ -57,9 +88,10 @@ class TripController extends Controller
         );
 
         return response()->json([
-            'total'       => $total,
-            'ocupados'    => $ocupados,
-            'disponibles' => $disponibles,
+            'total'           => $total,
+            'ocupados'        => $ocupados,
+            'disponibles'     => $disponibles,
+            'layout_asientos' => $vehicle->layout_asientos ?? null,
         ]);
     }
 }

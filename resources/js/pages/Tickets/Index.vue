@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, router } from '@inertiajs/vue3'
-import StatusBadge from '@/Components/StatusBadge.vue'
-import ConvertCpeModal from '@/Components/ConvertCpeModal.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import ConvertCpeModal from '@/components/ConvertCpeModal.vue'
 import { ref } from 'vue'
 
 declare const Swal: any

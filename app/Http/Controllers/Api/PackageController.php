@@ -69,4 +69,49 @@ class PackageController extends Controller
 
         return response()->json(new PackageResource($package));
     }
+
+    // PATCH /api/v1/packages/{package}
+    public function update(Request $request, Package $package): JsonResponse
+    {
+        if ($package->estado === 'entregado') {
+            return response()->json(['error' => 'No se puede editar una encomienda entregada.'], 400);
+        }
+
+        $validated = $request->validate([
+            'remitente_nombre'      => 'sometimes|required|string|max:200',
+            'remitente_dni'         => 'nullable|string|max:15',
+            'remitente_telefono'    => 'nullable|string|max:15',
+            'destinatario_nombre'   => 'sometimes|required|string|max:200',
+            'destinatario_dni'      => 'nullable|string|max:15',
+            'destinatario_telefono' => 'nullable|string|max:15',
+            'descripcion'           => 'sometimes|required|string|max:500',
+            'peso_kg'               => 'nullable|numeric|min:0.1',
+            'cantidad_bultos'       => 'sometimes|required|integer|min:1',
+            'precio'                => 'sometimes|required|numeric|min:0',
+            'estado_pago'           => 'sometimes|required|in:pagado,por_cobrar',
+        ]);
+
+        $package->update($validated);
+
+        return response()->json(new PackageResource($package));
+    }
+
+    // PATCH /api/v1/packages/{package}/anular
+    public function anular(Request $request, Package $package): JsonResponse
+    {
+        if ($package->estado === 'entregado') {
+            return response()->json(['error' => 'No se puede anular una encomienda entregada.'], 400);
+        }
+
+        if ($package->estado === 'anulado') {
+            return response()->json(['error' => 'La encomienda ya está anulada.'], 400);
+        }
+
+        $package->update([
+            'estado'      => 'anulado',
+            'estado_pago' => 'anulado',
+        ]);
+
+        return response()->json(new PackageResource($package));
+    }
 }

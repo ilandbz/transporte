@@ -23,7 +23,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-import PackageFormModal from '@/Components/PackageFormModal.vue'
+import PackageFormModal from '@/components/PackageFormModal.vue'
 const packageModal = ref<InstanceType<typeof PackageFormModal> | null>(null)
 
 const filter = (key: string, value: string) => {
