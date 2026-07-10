@@ -94,4 +94,20 @@ class TripController extends Controller
             'layout_asientos' => $vehicle->layout_asientos ?? null,
         ]);
     }
+
+    // GET /api/v1/trips/{trip}/tickets — Listado de pasajes vendidos en este viaje
+    public function tickets(Trip $trip): JsonResponse
+    {
+        $tickets = $trip->tickets()->orderBy('created_at', 'desc')->get();
+
+        return response()->json(\App\Http\Resources\TicketResource::collection($tickets));
+    }
+
+    // GET /api/v1/trips/{trip}/packages — Listado de encomiendas registradas en este viaje
+    public function packages(Trip $trip): JsonResponse
+    {
+        $packages = $trip->packages()->orderBy('created_at', 'desc')->get();
+
+        return response()->json(\App\Http\Resources\PackageResource::collection($packages));
+    }
 }

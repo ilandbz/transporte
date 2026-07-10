@@ -13,6 +13,8 @@ class TicketResource extends JsonResource
             'id'                       => $this->id,
             'uuid_local'               => $this->uuid_local,
             'numero_asiento'           => $this->numero_asiento,
+            'clase'                    => $this->clase,
+            'estado'                   => $this->estado,
             'origen_tramo'             => $this->origen_tramo,
             'destino_tramo'            => $this->destino_tramo,
             'dni_pasajero'             => $this->dni_pasajero,
@@ -32,7 +34,7 @@ class TicketResource extends JsonResource
             'trip'                     => $this->when($this->relationLoaded('trip'), [
                 'id'               => $this->trip->id,
                 'placa_vehiculo'   => $this->trip->placa_vehiculo,
-                'numero_manifiesto'=> $this->trip->numero_manifiesto,
+                'numero_manifiesto' => $this->trip->numero_manifiesto,
             ]),
         ];
     }
