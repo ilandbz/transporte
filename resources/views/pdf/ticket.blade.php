@@ -5,15 +5,20 @@
     <title>Comprobante {{ $ticket->serie_cpe ? $ticket->serie_cpe.'-'.$ticket->correlativo_cpe : $ticket->uuid_local }}</title>
     <style>
         /* dompdf tiene soporte CSS limitado: evitar flexbox/grid, usar tablas y floats. */
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             color: #000;
-            margin: 0;
-            padding: 0;
-            width: 75mm;
+            width: 80mm;
+            box-sizing: border-box;
         }
         .container {
             padding: 10px;
+            box-sizing: border-box;
+            width: 100%;
         }
         .header {
             text-align: center;
@@ -38,10 +43,15 @@
             text-align: left;
             padding: 3px 0;
             vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         table.details th {
-            width: 42%;
+            width: 38%;
             font-weight: bold;
+        }
+        table.details td {
+            width: 62%;
         }
         .codes {
             text-align: center;
