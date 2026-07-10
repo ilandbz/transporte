@@ -25,6 +25,7 @@ class TicketController extends Controller
             'trip_id'                 => 'required|exists:trips,id',
             'uuid_local'              => 'required|uuid',
             'numero_asiento'          => 'required|integer|min:1',
+            'clase'                   => 'required|in:normal,vip',
             'origen_tramo'            => 'required|string',
             'destino_tramo'           => 'required|string',
             'ubigeo_origen'           => 'required|string|size:6',
