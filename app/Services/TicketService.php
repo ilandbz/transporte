@@ -49,6 +49,7 @@ class TicketService
                 'uuid_local'              => $data['uuid_local'],
                 'trip_id'                 => $trip->id,
                 'user_id'                 => auth()->id(),
+                'branch_id'               => auth()->user()->branch_id,
                 'numero_asiento'          => $data['numero_asiento'],
                 'clase'                   => $data['clase'],
                 'origen_tramo'            => $data['origen_tramo'],
