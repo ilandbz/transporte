@@ -37,6 +37,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Pasajes
     Route::post('tickets', [TicketController::class, 'store']);
     Route::get('tickets/{ticket}', [TicketController::class, 'show']);
+    Route::get('tickets/{ticket}/pdf', [TicketController::class, 'pdf']);
     Route::patch('tickets/{ticket}/anular', [TicketController::class, 'anular']);
 
     // Encomiendas

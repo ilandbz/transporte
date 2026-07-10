@@ -10,6 +10,10 @@ use App\Services\TicketService;
 use App\Services\SunatGreenterService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class TicketController extends Controller
 {
@@ -55,6 +59,21 @@ class TicketController extends Controller
     public function show(Ticket $ticket): JsonResponse
     {
         return response()->json(new TicketResource($ticket->load(['trip.route', 'trip.vehicle'])));
+    }
+
+    // GET /api/v1/tickets/{ticket}/pdf — Comprobante descargable para compartir (WhatsApp, etc.)
+    public function pdf(Ticket $ticket): Response
+    {
+        $qrCode = new QrCode($ticket->uuid_local);
+        $writer = new PngWriter();
+        $qrBase64 = 'data:image/png;base64,' . base64_encode($writer->write($qrCode)->getString());
+
+        $pdf = Pdf::loadView('pdf.ticket', ['ticket' => $ticket, 'qrBase64' => $qrBase64])
+            ->setPaper([0, 0, 226.77, 400], 'portrait'); // ~80mm de ancho, alto flexible
+
+        $nombre = 'comprobante-' . ($ticket->serie_cpe ?: $ticket->uuid_local) . '.pdf';
+
+        return $pdf->stream($nombre);
     }
 
     // PATCH /api/v1/tickets/{ticket}/anular

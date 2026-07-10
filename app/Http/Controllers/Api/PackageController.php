@@ -27,7 +27,7 @@ class PackageController extends Controller
             'cantidad_bultos'       => 'required|integer|min:1',
             'precio'                => 'required|numeric|min:0',
             'estado_pago'           => 'required|in:pagado,por_cobrar',
-            'branch_id'             => auth()->user()->branch_id,
+            'branch_id'             =>  auth()->user()->branch_id,
             'emitido_en'            => 'required|date',
         ]);
 
