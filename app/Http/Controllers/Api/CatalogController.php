@@ -27,9 +27,12 @@ class CatalogController extends Controller
             $tramos = [];
             foreach ($tramosGrouped as $key => $tarifas) {
                 [$origen, $destino] = explode('|', $key);
+                $primera = $tarifas->first();
                 $tramos[] = [
-                    'origen'  => $origen,
-                    'destino' => $destino,
+                    'origen'         => $origen,
+                    'destino'        => $destino,
+                    'ubigeo_origen'  => $primera->ubigeo_origen,
+                    'ubigeo_destino' => $primera->ubigeo_destino,
                     'tarifas' => $tarifas->map(function ($t) {
                         return [
                             'clase'  => $t->clase,
