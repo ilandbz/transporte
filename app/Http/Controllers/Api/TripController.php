@@ -77,6 +77,31 @@ class TripController extends Controller
         return response()->json($trip);
     }
 
+    // PATCH /api/v1/trips/{trip}/start — Iniciar ruta (abierto -> en_ruta)
+    public function start(Request $request, Trip $trip): JsonResponse
+    {
+        if ($trip->user_id !== auth()->id()) {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        if ($trip->estado !== 'abierto') {
+            return response()->json(['error' => 'Solo se puede iniciar un viaje que esté abierto.'], 400);
+        }
+
+        $validated = $request->validate([
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        $trip->update([
+            'estado'      => 'en_ruta',
+            'lat_inicio'  => $validated['lat'] ?? null,
+            'lng_inicio'  => $validated['lng'] ?? null,
+        ]);
+
+        return response()->json($trip);
+    }
+
     // GET /api/v1/trips/{trip}/seats — Estado de asientos
     public function seats(Trip $trip): JsonResponse
     {
