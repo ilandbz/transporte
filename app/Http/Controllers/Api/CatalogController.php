@@ -80,4 +80,21 @@ class CatalogController extends Controller
 
         return response()->json($branches);
     }
+
+    /**
+     * GET /api/v1/conductores — Solo admin.
+     * Lista usuarios con rol conductor/counter para asignar al abrir un viaje.
+     */
+    public function conductores(Request $request): JsonResponse
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
+        $conductores = \App\Models\User::whereIn('role', ['conductor', 'counter'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role', 'branch_id']);
+
+        return response()->json($conductores);
+    }
 }

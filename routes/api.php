@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\GpsController;
 use App\Http\Controllers\Api\ConsultaController;
 use App\Http\Controllers\Api\TestSunatController;
 use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\RouteManagementController;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login']);
@@ -25,6 +26,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('routes', [CatalogController::class, 'routes']);
     Route::get('vehicles', [CatalogController::class, 'vehicles']);
     Route::get('branches', [CatalogController::class, 'branches']);
+    Route::get('conductores', [CatalogController::class, 'conductores']);
+
+    Route::get('admin/routes', [RouteManagementController::class, 'index']);
+    Route::post('admin/routes', [RouteManagementController::class, 'store']);
+    Route::patch('admin/routes/{route}/toggle', [RouteManagementController::class, 'toggleActivo']);
+    Route::post('admin/routes/{route}/tariffs', [RouteManagementController::class, 'storeTariff']);
+    Route::put('admin/routes/tariffs/{tariff}', [RouteManagementController::class, 'updateTariff']);
+    Route::delete('admin/routes/tariffs/{tariff}', [RouteManagementController::class, 'destroyTariff']);
 
     // Viajes (manifiestos)
     Route::get('trips', [TripController::class, 'index']);

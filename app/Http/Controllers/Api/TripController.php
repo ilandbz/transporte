@@ -50,13 +50,24 @@ class TripController extends Controller
             'vehicle_id'        => 'required|exists:vehicles,id',
             'fecha_salida'      => 'required|date',
             'numero_manifiesto' => 'nullable|string|max:20',
+            'conductor_id'      => 'nullable|exists:users,id',
         ]);
+
+        // Solo un admin puede abrir un viaje "para" otro usuario (asignar
+        // conductor). Cualquier otro rol siempre queda como conductor de
+        // su propio viaje, ignorando 'conductor_id' si lo mandaran.
+        $conductorId = (auth()->user()->role === 'admin' && !empty($validated['conductor_id']))
+            ? $validated['conductor_id']
+            : auth()->id();
 
         $vehicle = Vehicle::findOrFail($validated['vehicle_id']);
 
         $trip = Trip::create([
-            ...$validated,
-            'user_id'        => auth()->id(),
+            'route_id'          => $validated['route_id'],
+            'vehicle_id'        => $validated['vehicle_id'],
+            'fecha_salida'      => $validated['fecha_salida'],
+            'numero_manifiesto' => $validated['numero_manifiesto'] ?? null,
+            'user_id'        => $conductorId,
             'placa_vehiculo' => $vehicle->placa,
             'estado'         => 'abierto',
             'asientos_ocupados' => [],
