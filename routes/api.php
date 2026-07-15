@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ConsultaController;
 use App\Http\Controllers\Api\TestSunatController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\RouteManagementController;
+use App\Http\Controllers\Api\UbigeoController;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login']);
@@ -27,6 +28,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('vehicles', [CatalogController::class, 'vehicles']);
     Route::get('branches', [CatalogController::class, 'branches']);
     Route::get('conductores', [CatalogController::class, 'conductores']);
+
+    Route::get('ubigeo/departamentos', [UbigeoController::class, 'departamentos']);
+    Route::get('ubigeo/departamentos/{departamento}/provincias', [UbigeoController::class, 'provincias']);
+    Route::get('ubigeo/provincias/{provincia}/distritos', [UbigeoController::class, 'distritos']);
 
     Route::get('admin/routes', [RouteManagementController::class, 'index']);
     Route::post('admin/routes', [RouteManagementController::class, 'store']);
