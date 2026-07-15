@@ -35,6 +35,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('trips/{trip}/seats', [TripController::class, 'seats']);
     Route::get('trips/{trip}/tickets', [TripController::class, 'tickets']);
     Route::get('trips/{trip}/packages', [TripController::class, 'packages']);
+    Route::get('trips/{trip}/gps', [TripController::class, 'gps']);
     Route::post('trips/{trip}/gps', [GpsController::class, 'store']);
 
     // Pasajes

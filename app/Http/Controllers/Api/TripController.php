@@ -135,4 +135,17 @@ class TripController extends Controller
 
         return response()->json(\App\Http\Resources\PackageResource::collection($packages));
     }
+
+    // GET /api/v1/trips/{trip}/gps — Historial de posiciones GPS del viaje
+    public function gps(Trip $trip): JsonResponse
+    {
+        $puntos = $trip->gpsTracks()->orderBy('registrado_en', 'asc')->get();
+
+        return response()->json($puntos->map(fn($p) => [
+            'lat'           => (float) $p->lat,
+            'lng'           => (float) $p->lng,
+            'velocidad_kmh' => $p->velocidad_kmh !== null ? (float) $p->velocidad_kmh : null,
+            'registrado_en' => $p->registrado_en,
+        ]));
+    }
 }
