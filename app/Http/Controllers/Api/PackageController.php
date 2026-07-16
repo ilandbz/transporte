@@ -21,8 +21,8 @@ class PackageController extends Controller
     {
         $validated = $request->validate([
             'uuid_local'             => 'required|uuid',
-            'lugar_origen_id'        => 'required|exists:lugares,id',
-            'lugar_destino_id'       => 'required|exists:lugares,id|different:lugar_origen_id',
+            'lugar_origen_id'        => 'required|exists:lugars,id',
+            'lugar_destino_id'       => 'required|exists:lugars,id|different:lugar_origen_id',
             'remitente_documento'    => 'nullable|string|max:15',
             'remitente_nombre'       => 'nullable|string|max:200',
             'remitente_telefono'     => 'nullable|string|max:15',
