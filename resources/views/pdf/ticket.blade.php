@@ -89,7 +89,7 @@
         <table class="details">
             <tr>
                 <th>Servicio:</th>
-                <td>SERVICIO DE TRANSPORTE<br>{{ $ticket->origen_tramo }} → {{ $ticket->destino_tramo }}</td>
+                <td>SERVICIO DE TRANSPORTE<br>{{ $ticket->origen_tramo }} - {{ $ticket->destino_tramo }}</td>
             </tr>
             <tr>
                 <th>Pasajero:</th>
