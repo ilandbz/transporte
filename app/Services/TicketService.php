@@ -24,6 +24,7 @@ class TicketService
         $cliente = $this->clienteService->resolver(
             $data['dni_pasajero'] ?? null,
             $data['nombre_pasajero'] ?? null,
+            $data['telefono_pasajero'] ?? null,
         );
 
         $origenLugar = Lugar::find($data['lugar_origen_id']);

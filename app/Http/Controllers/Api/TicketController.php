@@ -46,6 +46,7 @@ class TicketController extends Controller
             'placa_vehiculo'          => 'nullable|string|max:10',
             'dni_pasajero'            => 'nullable|string|max:15',
             'nombre_pasajero'         => 'nullable|string|max:200',
+            'telefono_pasajero'       => 'nullable|string|max:15',
             'metodo_pago'             => 'required|in:efectivo,yape,plin,transferencia',
             'tipo_documento'          => 'required|in:BOLETA,FACTURA,TICKET_INTERNO',
             'estado_pago'             => 'nullable|in:pagado,pendiente',

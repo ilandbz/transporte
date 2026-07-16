@@ -83,11 +83,14 @@
             @if($ticket->serie_cpe)
                 <p><strong>{{ $ticket->serie_cpe }} - {{ $ticket->correlativo_cpe }}</strong></p>
             @endif
-            <p><strong>Ruta:</strong> {{ $ticket->origen_tramo }} - {{ $ticket->destino_tramo }}</p>
             <p><strong>Fecha:</strong> {{ \Illuminate\Support\Carbon::parse($ticket->emitido_en)->format('d/m/Y H:i') }}</p>
         </div>
 
         <table class="details">
+            <tr>
+                <th>Servicio:</th>
+                <td>SERVICIO DE TRANSPORTE<br>{{ $ticket->origen_tramo }} → {{ $ticket->destino_tramo }}</td>
+            </tr>
             <tr>
                 <th>Pasajero:</th>
                 <td>
@@ -95,18 +98,22 @@
                     <small>{{ $ticket->dni_pasajero ?: '00000000' }}</small>
                 </td>
             </tr>
+            @if($ticket->numero_asiento)
             <tr>
                 <th>Asiento:</th>
                 <td>{{ $ticket->numero_asiento }} ({{ ucfirst($ticket->clase) }})</td>
             </tr>
+            @endif
             <tr>
                 <th>Método de pago:</th>
                 <td style="text-transform: uppercase;">{{ $ticket->metodo_pago }}</td>
             </tr>
+            @if($ticket->placa_vehiculo)
             <tr>
                 <th>Placa bus:</th>
                 <td>{{ $ticket->placa_vehiculo }}</td>
             </tr>
+            @endif
             <tr>
                 <th>Total pagado:</th>
                 <td><strong>S/ {{ number_format($ticket->precio, 2) }}</strong></td>

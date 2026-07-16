@@ -13,8 +13,9 @@ class ClienteService
      * el nombre vía RENIEC/SUNAT y lo crea para reutilizarlo en próximas
      * ventas. Si no se pudo autocompletar y no vino $nombre, se crea igual
      * con el nombre que se le pase (puede quedar null temporalmente).
+     * Si viene $telefono y el cliente no tenía uno guardado, se completa.
      */
-    public function resolver(?string $documento, ?string $nombre): ?Client
+    public function resolver(?string $documento, ?string $nombre, ?string $telefono = null): ?Client
     {
         if (empty($documento)) {
             return null;
@@ -22,9 +23,15 @@ class ClienteService
 
         $cliente = Client::where('documento', $documento)->first();
         if ($cliente) {
-            // Si ahora tenemos un nombre y antes no, lo completamos.
+            $cambios = [];
             if (empty($cliente->nombre) && !empty($nombre)) {
-                $cliente->update(['nombre' => $nombre]);
+                $cambios['nombre'] = $nombre;
+            }
+            if (empty($cliente->telefono) && !empty($telefono)) {
+                $cambios['telefono'] = $telefono;
+            }
+            if ($cambios) {
+                $cliente->update($cambios);
             }
             return $cliente;
         }
@@ -47,6 +54,7 @@ class ClienteService
             'documento'      => $documento,
             'tipo_documento' => $tipoDocumento,
             'nombre'         => $nombre ?: 'CLIENTES VARIOS',
+            'telefono'       => $telefono,
         ]);
     }
 }
