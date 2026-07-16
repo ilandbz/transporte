@@ -24,8 +24,8 @@ return new class extends Migration
         Schema::table('tickets', function (Blueprint $table) {
             $table->foreignId('cliente_id')->nullable()->after('user_id')->constrained('clients')->nullOnDelete();
             $table->foreignId('vehicle_id')->nullable()->after('cliente_id')->constrained()->nullOnDelete();
-            $table->foreignId('lugar_origen_id')->nullable()->after('vehicle_id')->constrained('lugares')->nullOnDelete();
-            $table->foreignId('lugar_destino_id')->nullable()->after('lugar_origen_id')->constrained('lugares')->nullOnDelete();
+            $table->foreignId('lugar_origen_id')->nullable()->after('vehicle_id')->constrained('lugars')->nullOnDelete();
+            $table->foreignId('lugar_destino_id')->nullable()->after('lugar_origen_id')->constrained('lugars')->nullOnDelete();
         });
     }
 
