@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\RouteTariff;
+use App\Models\Lugar;
 use App\Models\Ticket;
 use App\Models\Trip;
 use Illuminate\Support\Facades\DB;
@@ -11,67 +11,52 @@ class TicketService
 {
     public function __construct(
         private SunatGreenterService $greenter,
-        private DniRucApiService $dniService,
+        private ClienteService $clienteService,
     ) {}
 
-    public function create(array $data, Trip $trip): Ticket
+    /**
+     * Crea un ticket "simplificado": sin viaje/asiento/tarifa obligatorios.
+     * El origen/destino se resuelven desde el catálogo de Lugares y el
+     * precio lo ingresa directamente quien vende (conductor/counter/admin).
+     */
+    public function create(array $data): Ticket
     {
-        // Verificar asiento disponible
-        if ($trip->isAsientoOcupado($data['numero_asiento'])) {
-            throw new \Exception("Asiento {$data['numero_asiento']} ya está ocupado.");
-        }
+        $cliente = $this->clienteService->resolver(
+            $data['dni_pasajero'] ?? null,
+            $data['nombre_pasajero'] ?? null,
+        );
 
-        // Calcular precio si no viene en el payload
-        if (empty($data['precio'])) {
-            $tarifa = RouteTariff::where('route_id', $trip->route_id)
-                ->where('origen_tramo', $data['origen_tramo'])
-                ->where('destino_tramo', $data['destino_tramo'])
-                ->where('clase', $data['clase'])
-                ->first();
+        $origenLugar = Lugar::find($data['lugar_origen_id']);
+        $destinoLugar = Lugar::find($data['lugar_destino_id']);
 
-            if (!$tarifa) {
-                throw new \Exception("No existe tarifa para {$data['origen_tramo']} → {$data['destino_tramo']}.");
-            }
+        $trip = !empty($data['trip_id']) ? Trip::find($data['trip_id']) : null;
 
-            $data['precio'] = $tarifa->precio;
-        }
-
-        // Consultar nombre si hay DNI y no vino
-        if (!empty($data['dni_pasajero']) && empty($data['nombre_pasajero'])) {
-            $persona = $this->dniService->consultarDni($data['dni_pasajero']);
-            if ($persona) {
-                $data['nombre_pasajero'] = trim(($persona['nombre'] ?? '') . ' ' . ($persona['apellidos'] ?? ''));
-            }
-        }
-
-        return DB::transaction(function () use ($data, $trip) {
+        return DB::transaction(function () use ($data, $cliente, $origenLugar, $destinoLugar, $trip) {
             $ticket = Ticket::create([
                 'uuid_local'              => $data['uuid_local'],
-                'trip_id'                 => $trip->id,
+                'trip_id'                 => $trip?->id,
                 'user_id'                 => auth()->id(),
                 'branch_id'               => auth()->user()->branch_id,
-                'numero_asiento'          => $data['numero_asiento'],
-                'clase'                   => $data['clase'],
-                'origen_tramo'            => $data['origen_tramo'],
-                'destino_tramo'           => $data['destino_tramo'],
-                'ubigeo_origen'           => $data['ubigeo_origen'],
-                'ubigeo_destino'          => $data['ubigeo_destino'],
-                'dni_pasajero'            => $data['dni_pasajero'] ?? null,
-                'nombre_pasajero'         => $data['nombre_pasajero'] ?? null,
-                'placa_vehiculo'          => $trip->placa_vehiculo,
+                'cliente_id'              => $cliente?->id,
+                'vehicle_id'              => $data['vehicle_id'] ?? null,
+                'lugar_origen_id'         => $origenLugar?->id,
+                'lugar_destino_id'        => $destinoLugar?->id,
+                'origen_tramo'            => $origenLugar?->nombre,
+                'destino_tramo'           => $destinoLugar?->nombre,
+                'dni_pasajero'            => $cliente?->documento,
+                'nombre_pasajero'         => $cliente?->nombre,
+                'placa_vehiculo'          => $data['placa_vehiculo'] ?? null,
                 'precio'                  => $data['precio'],
-                'estado_pago'             => $data['estado_pago'] ?? 'pendiente',
-                'estado'                  => $data['estado'] ?? 'confirmado',
+                'estado_pago'             => $data['estado_pago'] ?? 'pagado',
+                'estado'                  => 'confirmado',
                 'metodo_pago'             => $data['metodo_pago'],
                 'tipo_documento'          => $data['tipo_documento'],
-                'documento_facturacion'   => $data['documento_facturacion'] ?? null,
-                'nombre_facturacion'      => $data['nombre_facturacion'] ?? null,
+                'documento_facturacion'   => $cliente?->tipo_documento === 'RUC' ? $cliente->documento : null,
+                'nombre_facturacion'      => $cliente?->tipo_documento === 'RUC' ? $cliente->nombre : null,
                 'sincronizado'            => false,
-                'emitido_en_contingencia' => $data['emitido_en_contingencia'],
+                'emitido_en_contingencia' => $data['emitido_en_contingencia'] ?? false,
                 'emitido_en'              => $data['emitido_en'],
             ]);
-
-            $trip->ocuparAsiento($data['numero_asiento']);
 
             // Intentar CPE si no es contingencia
             if (in_array($ticket->tipo_documento, ['BOLETA', 'FACTURA']) && !$ticket->emitido_en_contingencia) {
@@ -96,21 +81,5 @@ class TicketService
 
             return $ticket->fresh();
         });
-    }
-
-    public function calcularPrecio(Trip $trip, string $origen, string $destino, string $clase = 'normal'): float
-    {
-        $tarifa = RouteTariff::where('route_id', $trip->route_id)
-            ->where('origen_tramo', $origen)
-            ->where('destino_tramo', $destino)
-            ->where('clase', $clase)
-            ->firstOrFail();
-
-        return (float) $tarifa->precio;
-    }
-
-    public function isAsientoDisponible(Trip $trip, int $asiento): bool
-    {
-        return !$trip->isAsientoOcupado($asiento);
     }
 }

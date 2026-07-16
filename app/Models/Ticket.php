@@ -15,6 +15,10 @@ class Ticket extends Model
         'uuid_local',
         'trip_id',
         'user_id',
+        'cliente_id',
+        'vehicle_id',
+        'lugar_origen_id',
+        'lugar_destino_id',
         'numero_asiento',
         'clase',
         'origen_tramo',
@@ -56,6 +60,26 @@ class Ticket extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'cliente_id');
+    }
+
+    public function lugarOrigen(): BelongsTo
+    {
+        return $this->belongsTo(Lugar::class, 'lugar_origen_id');
+    }
+
+    public function lugarDestino(): BelongsTo
+    {
+        return $this->belongsTo(Lugar::class, 'lugar_destino_id');
     }
 
     public function branch(): BelongsTo

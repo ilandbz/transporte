@@ -15,6 +15,11 @@ class Package extends Model
         'uuid_local',
         'trip_id',
         'user_id',
+        'cliente_remitente_id',
+        'cliente_destinatario_id',
+        'vehicle_id',
+        'lugar_origen_id',
+        'lugar_destino_id',
         'remitente_nombre',
         'remitente_dni',
         'remitente_telefono',
@@ -50,6 +55,31 @@ class Package extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function lugarOrigen(): BelongsTo
+    {
+        return $this->belongsTo(Lugar::class, 'lugar_origen_id');
+    }
+
+    public function lugarDestino(): BelongsTo
+    {
+        return $this->belongsTo(Lugar::class, 'lugar_destino_id');
+    }
+
+    public function clienteRemitente(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'cliente_remitente_id');
+    }
+
+    public function clienteDestinatario(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'cliente_destinatario_id');
     }
 
     public function branch(): BelongsTo

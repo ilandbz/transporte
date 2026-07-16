@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\TestSunatController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\RouteManagementController;
 use App\Http\Controllers\Api\UbigeoController;
+use App\Http\Controllers\Api\LugarController;
+use App\Http\Controllers\Api\JornadaController;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login']);
@@ -32,6 +34,16 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('ubigeo/departamentos', [UbigeoController::class, 'departamentos']);
     Route::get('ubigeo/departamentos/{departamento}/provincias', [UbigeoController::class, 'provincias']);
     Route::get('ubigeo/provincias/{provincia}/distritos', [UbigeoController::class, 'distritos']);
+
+    // Lugares (catálogo simple para origen/destino de pasajes y encomiendas)
+    Route::get('lugares', [LugarController::class, 'index']);
+
+    // Jornadas (GPS simplificado, sin relación a venta de pasajes)
+    Route::get('jornadas', [JornadaController::class, 'index']);
+    Route::post('jornadas', [JornadaController::class, 'store']);
+    Route::patch('jornadas/{jornada}/cerrar', [JornadaController::class, 'cerrar']);
+    Route::post('jornadas/{jornada}/gps', [JornadaController::class, 'storeGps']);
+    Route::get('jornadas/{jornada}/gps', [JornadaController::class, 'gps']);
 
     Route::get('admin/routes', [RouteManagementController::class, 'index']);
     Route::post('admin/routes', [RouteManagementController::class, 'store']);

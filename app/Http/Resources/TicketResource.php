@@ -31,10 +31,10 @@ class TicketResource extends JsonResource
             'emitido_en_contingencia'  => $this->emitido_en_contingencia,
             'emitido_en'               => $this->emitido_en?->toISOString(),
             'esta_emitido'             => $this->esta_emitido,
-            'trip'                     => $this->when($this->relationLoaded('trip'), [
-                'id'               => $this->trip->id,
-                'placa_vehiculo'   => $this->trip->placa_vehiculo,
-                'numero_manifiesto' => $this->trip->numero_manifiesto,
+            'trip'                     => $this->when($this->relationLoaded('trip') && $this->trip, [
+                'id'               => $this->trip?->id,
+                'placa_vehiculo'   => $this->trip?->placa_vehiculo,
+                'numero_manifiesto' => $this->trip?->numero_manifiesto,
             ]),
         ];
     }

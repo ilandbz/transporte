@@ -132,10 +132,10 @@ class SunatGreenterService
 
             // Descripción del servicio (incluye datos Catálogo N°19)
             $descripcion = implode(' | ', array_filter([
-                "PASAJE TERRESTRE",
+                'SERVICIO DE TRANSPORTE',
                 "{$ticket->origen_tramo} - {$ticket->destino_tramo}",
-                "ASIENTO N°{$ticket->numero_asiento}",
-                "PLACA: {$ticket->placa_vehiculo}",
+                $ticket->numero_asiento ? "ASIENTO N°{$ticket->numero_asiento}" : null,
+                $ticket->placa_vehiculo ? "PLACA: {$ticket->placa_vehiculo}" : null,
                 $ticket->trip?->numero_manifiesto ? "MANIF: {$ticket->trip->numero_manifiesto}" : null,
             ]));
 
@@ -183,8 +183,13 @@ class SunatGreenterService
 
             if (!$result->isSuccess()) {
                 Log::error("Greenter error conexión: " . $result->getError()->getMessage());
-                return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                        'error' => $result->getError()->getMessage()];
+                return [
+                    'status' => false,
+                    'serie' => null,
+                    'correlativo' => null,
+                    'cdr' => null,
+                    'error' => $result->getError()->getMessage()
+                ];
             }
 
             $cdr  = $result->getCdrResponse();
@@ -200,11 +205,15 @@ class SunatGreenterService
                 'descripcion' => $cdr->getDescription(),
                 'notas'       => $cdr->getNotes(),
             ];
-
         } catch (\Exception $e) {
             Log::error("SunatGreenterService::emitirBoleta — " . $e->getMessage());
-            return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                    'error' => $e->getMessage()];
+            return [
+                'status' => false,
+                'serie' => null,
+                'correlativo' => null,
+                'cdr' => null,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
@@ -227,7 +236,12 @@ class SunatGreenterService
                 ->setNumDoc($docFacturacion)
                 ->setRznSocial($ticket->nombre_facturacion ?? 'EMPRESA GENÉRICA');
 
-            $descripcion = "PASAJE TERRESTRE {$ticket->origen_tramo} - {$ticket->destino_tramo} | ASIENTO N°{$ticket->numero_asiento} | PLACA: {$ticket->placa_vehiculo}";
+            $descripcion = implode(' | ', array_filter([
+                'SERVICIO DE TRANSPORTE',
+                "{$ticket->origen_tramo} - {$ticket->destino_tramo}",
+                $ticket->numero_asiento ? "ASIENTO N°{$ticket->numero_asiento}" : null,
+                $ticket->placa_vehiculo ? "PLACA: {$ticket->placa_vehiculo}" : null,
+            ]));
 
             $detail = (new SaleDetail())
                 ->setCodProducto('PASAJE')
@@ -267,8 +281,13 @@ class SunatGreenterService
             $result = $this->see->send($invoice);
 
             if (!$result->isSuccess()) {
-                return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                        'error' => $result->getError()->getMessage()];
+                return [
+                    'status' => false,
+                    'serie' => null,
+                    'correlativo' => null,
+                    'cdr' => null,
+                    'error' => $result->getError()->getMessage()
+                ];
             }
 
             $cdr  = $result->getCdrResponse();
@@ -281,11 +300,15 @@ class SunatGreenterService
                 'cdr'         => (string) $code,
                 'descripcion' => $cdr->getDescription(),
             ];
-
         } catch (\Exception $e) {
             Log::error("SunatGreenterService::emitirFactura — " . $e->getMessage());
-            return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                    'error' => $e->getMessage()];
+            return [
+                'status' => false,
+                'serie' => null,
+                'correlativo' => null,
+                'cdr' => null,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
@@ -306,13 +329,22 @@ class SunatGreenterService
             // Requiere: puntos de partida/llegada, destinatario, bienes transportados
             Log::info("GRE {$serie}-{$correlativo} para Package #{$package->id} — pendiente implementación completa");
 
-            return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                    'error' => 'GRE pendiente de implementación completa'];
-
+            return [
+                'status' => false,
+                'serie' => null,
+                'correlativo' => null,
+                'cdr' => null,
+                'error' => 'GRE pendiente de implementación completa'
+            ];
         } catch (\Exception $e) {
             Log::error("SunatGreenterService::emitirGRE — " . $e->getMessage());
-            return ['status' => false, 'serie' => null, 'correlativo' => null, 'cdr' => null,
-                    'error' => $e->getMessage()];
+            return [
+                'status' => false,
+                'serie' => null,
+                'correlativo' => null,
+                'cdr' => null,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
@@ -378,7 +410,6 @@ class SunatGreenterService
                 'descripcion' => $cdr->getDescription(),
                 'mensaje'     => 'Conexión con SUNAT Beta exitosa',
             ];
-
         } catch (\Exception $e) {
             return ['ok' => false, 'mensaje' => $e->getMessage()];
         }
@@ -391,7 +422,7 @@ class SunatGreenterService
     {
         try {
             $tipoDoc = $ticket->tipo_documento === 'FACTURA' ? '01' : '03';
-            
+
             // Usaremos el ID del ticket como correlativo diario para garantizar unicidad
             $correlativoBaja = str_pad((string)($ticket->id % 99999), 5, '0', STR_PAD_LEFT);
 
@@ -431,7 +462,6 @@ class SunatGreenterService
                 'descripcion' => $ticketCdr->getDescription(),
                 'notas'       => $ticketCdr->getNotes(),
             ];
-
         } catch (\Exception $e) {
             Log::error("SunatGreenterService::anularComprobante — " . $e->getMessage());
             return ['status' => false, 'cdr' => null, 'error' => $e->getMessage()];

@@ -14,6 +14,7 @@ class GpsTrack extends Model
 
     protected $fillable = [
         'trip_id',
+        'jornada_id',
         'lat',
         'lng',
         'velocidad_kmh',
@@ -30,5 +31,10 @@ class GpsTrack extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function jornada(): BelongsTo
+    {
+        return $this->belongsTo(Jornada::class);
     }
 }
