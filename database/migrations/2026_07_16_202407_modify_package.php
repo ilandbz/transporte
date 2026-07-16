@@ -22,8 +22,8 @@ return new class extends Migration
             $table->foreignId('cliente_remitente_id')->nullable()->after('user_id')->constrained('clients')->nullOnDelete();
             $table->foreignId('cliente_destinatario_id')->nullable()->after('cliente_remitente_id')->constrained('clients')->nullOnDelete();
             $table->foreignId('vehicle_id')->nullable()->after('cliente_destinatario_id')->constrained()->nullOnDelete();
-            $table->foreignId('lugar_origen_id')->nullable()->after('vehicle_id')->constrained('lugares')->nullOnDelete();
-            $table->foreignId('lugar_destino_id')->nullable()->after('lugar_origen_id')->constrained('lugares')->nullOnDelete();
+            $table->foreignId('lugar_origen_id')->nullable()->after('vehicle_id')->constrained('lugars')->nullOnDelete();
+            $table->foreignId('lugar_destino_id')->nullable()->after('lugar_origen_id')->constrained('lugars')->nullOnDelete();
         });
     }
 
