@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
-use App\Models\Trip;
 use App\Services\TicketService;
 use App\Services\SunatGreenterService;
 use Illuminate\Http\Request;
@@ -21,6 +20,18 @@ class TicketController extends Controller
         private TicketService $ticketService,
         private SunatGreenterService $greenter
     ) {}
+
+    // GET /api/v1/tickets?mine=1 — Historial de pasajes
+    public function index(Request $request): JsonResponse
+    {
+        $query = Ticket::with(['lugarOrigen', 'lugarDestino'])->orderBy('created_at', 'desc');
+
+        if ($request->boolean('mine')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return response()->json(TicketResource::collection($query->limit(200)->get()));
+    }
 
     // POST /api/v1/tickets — Vender pasaje (simplificado: origen/destino
     // libres desde el catálogo de Lugares, sin viaje ni asiento obligatorios)

@@ -14,6 +14,18 @@ class PackageController extends Controller
 {
     public function __construct(private ClienteService $clienteService) {}
 
+    // GET /api/v1/packages?mine=1 — Historial de encomiendas
+    public function index(Request $request): JsonResponse
+    {
+        $query = Package::with(['lugarOrigen', 'lugarDestino'])->orderBy('created_at', 'desc');
+
+        if ($request->boolean('mine')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return response()->json(PackageResource::collection($query->limit(200)->get()));
+    }
+
     // POST /api/v1/packages — Registrar encomienda (simplificado: sin viaje
     // obligatorio, origen/destino desde el catálogo de Lugares, clientes
     // reutilizables por DNI/RUC)

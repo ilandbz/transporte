@@ -65,12 +65,14 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('trips/{trip}/gps', [GpsController::class, 'store']);
 
     // Pasajes
+    Route::get('tickets', [TicketController::class, 'index']);
     Route::post('tickets', [TicketController::class, 'store']);
     Route::get('tickets/{ticket}', [TicketController::class, 'show']);
     Route::get('tickets/{ticket}/pdf', [TicketController::class, 'pdf']);
     Route::patch('tickets/{ticket}/anular', [TicketController::class, 'anular']);
 
     // Encomiendas
+    Route::get('packages', [PackageController::class, 'index']);
     Route::post('packages', [PackageController::class, 'store']);
     Route::get('packages/{package}/qr', [PackageController::class, 'qr']);
     Route::patch('packages/{package}/deliver', [PackageController::class, 'deliver']);
