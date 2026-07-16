@@ -22,35 +22,32 @@ class TicketController extends Controller
         private SunatGreenterService $greenter
     ) {}
 
-    // POST /api/v1/tickets — Vender pasaje
+    // POST /api/v1/tickets — Vender pasaje (simplificado: origen/destino
+    // libres desde el catálogo de Lugares, sin viaje ni asiento obligatorios)
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'trip_id'                 => 'required|exists:trips,id',
             'uuid_local'              => 'required|uuid',
-            'numero_asiento'          => 'required|integer|min:1',
-            'clase'                   => 'required|in:normal,vip',
-            'origen_tramo'            => 'required|string',
-            'destino_tramo'           => 'required|string',
-            'ubigeo_origen'           => 'required|string|size:6',
-            'ubigeo_destino'          => 'required|string|size:6',
+            'lugar_origen_id'         => 'required|exists:lugares,id',
+            'lugar_destino_id'        => 'required|exists:lugares,id|different:lugar_origen_id',
+            'precio'                  => 'required|numeric|min:0',
+            'vehicle_id'              => 'nullable|exists:vehicles,id',
+            'placa_vehiculo'          => 'nullable|string|max:10',
             'dni_pasajero'            => 'nullable|string|max:15',
             'nombre_pasajero'         => 'nullable|string|max:200',
             'metodo_pago'             => 'required|in:efectivo,yape,plin,transferencia',
             'tipo_documento'          => 'required|in:BOLETA,FACTURA,TICKET_INTERNO',
+            'estado_pago'             => 'nullable|in:pagado,pendiente',
             'emitido_en'              => 'required|date',
-            'emitido_en_contingencia' => 'required|boolean',
+            'emitido_en_contingencia' => 'nullable|boolean',
+            // Compatibilidad opcional con el flujo anterior (viaje):
+            'trip_id'                 => 'nullable|exists:trips,id',
         ]);
 
-        $trip = Trip::findOrFail($validated['trip_id']);
-
         try {
-            $ticket = $this->ticketService->create($validated, $trip);
+            $ticket = $this->ticketService->create($validated);
             return response()->json(new TicketResource($ticket), 201);
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Asiento')) {
-                return response()->json(['error' => $e->getMessage()], 422);
-            }
             return response()->json(['error' => 'Error al crear ticket: ' . $e->getMessage()], 500);
         }
     }
@@ -93,7 +90,7 @@ class TicketController extends Controller
                 'estado' => 'anulado',
                 'estado_pago' => 'anulado'
             ]);
-            $ticket->trip->liberarAsiento($ticket->numero_asiento);
+            $ticket->trip?->liberarAsiento($ticket->numero_asiento);
             return response()->json(new TicketResource($ticket));
         }
 
@@ -107,7 +104,7 @@ class TicketController extends Controller
                 'cdr_status' => $res['cdr'],
                 'cdr_descripcion' => $res['descripcion'],
             ]);
-            $ticket->trip->liberarAsiento($ticket->numero_asiento);
+            $ticket->trip?->liberarAsiento($ticket->numero_asiento);
             return response()->json(new TicketResource($ticket));
         }
 
