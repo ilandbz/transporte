@@ -28,8 +28,8 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'uuid_local'              => 'required|uuid',
-            'lugar_origen_id'         => 'required|exists:lugares,id',
-            'lugar_destino_id'        => 'required|exists:lugares,id|different:lugar_origen_id',
+            'lugar_origen_id'         => 'required|exists:lugars,id',
+            'lugar_destino_id'        => 'required|exists:lugars,id|different:lugar_origen_id',
             'precio'                  => 'required|numeric|min:0',
             'vehicle_id'              => 'nullable|exists:vehicles,id',
             'placa_vehiculo'          => 'nullable|string|max:10',
