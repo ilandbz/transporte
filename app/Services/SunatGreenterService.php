@@ -131,9 +131,10 @@ class SunatGreenterService
                 ->setRznSocial($ticket->nombre_facturacion ?? $ticket->nombre_pasajero ?? 'CLIENTE VARIOS');
 
             // Descripción del servicio (incluye datos Catálogo N°19)
-            $descripcion = implode(' | ', array_filter([
+            $descripcion = $ticket->concepto ?: implode(' | ', array_filter([
                 'SERVICIO DE TRANSPORTE',
                 "{$ticket->origen_tramo} - {$ticket->destino_tramo}",
+                $ticket->ida_vuelta ? 'IDA Y VUELTA' : null,
                 $ticket->numero_asiento ? "ASIENTO N°{$ticket->numero_asiento}" : null,
                 $ticket->placa_vehiculo ? "PLACA: {$ticket->placa_vehiculo}" : null,
                 $ticket->trip?->numero_manifiesto ? "MANIF: {$ticket->trip->numero_manifiesto}" : null,
@@ -236,9 +237,10 @@ class SunatGreenterService
                 ->setNumDoc($docFacturacion)
                 ->setRznSocial($ticket->nombre_facturacion ?? 'EMPRESA GENÉRICA');
 
-            $descripcion = implode(' | ', array_filter([
+            $descripcion = $ticket->concepto ?: implode(' | ', array_filter([
                 'SERVICIO DE TRANSPORTE',
                 "{$ticket->origen_tramo} - {$ticket->destino_tramo}",
+                $ticket->ida_vuelta ? 'IDA Y VUELTA' : null,
                 $ticket->numero_asiento ? "ASIENTO N°{$ticket->numero_asiento}" : null,
                 $ticket->placa_vehiculo ? "PLACA: {$ticket->placa_vehiculo}" : null,
             ]));

@@ -19,6 +19,8 @@ class Ticket extends Model
         'vehicle_id',
         'lugar_origen_id',
         'lugar_destino_id',
+        'ida_vuelta',
+        'concepto',
         'numero_asiento',
         'clase',
         'origen_tramo',
@@ -49,6 +51,7 @@ class Ticket extends Model
 
     protected $casts = [
         'precio'                  => 'decimal:2',
+        'ida_vuelta'              => 'boolean',
         'sincronizado'            => 'boolean',
         'emitido_en_contingencia' => 'boolean',
         'emitido_en'              => 'datetime',

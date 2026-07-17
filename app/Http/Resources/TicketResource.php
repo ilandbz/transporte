@@ -17,6 +17,8 @@ class TicketResource extends JsonResource
             'estado'                   => $this->estado,
             'origen_tramo'             => $this->origen_tramo,
             'destino_tramo'            => $this->destino_tramo,
+            'ida_vuelta'               => $this->ida_vuelta,
+            'concepto'                 => $this->concepto,
             'dni_pasajero'             => $this->dni_pasajero,
             'nombre_pasajero'          => $this->nombre_pasajero,
             'telefono_pasajero'        => $this->cliente?->telefono,

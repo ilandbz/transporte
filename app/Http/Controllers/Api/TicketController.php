@@ -41,6 +41,8 @@ class TicketController extends Controller
             'uuid_local'              => 'required|uuid',
             'lugar_origen_id'         => 'required|exists:lugars,id',
             'lugar_destino_id'        => 'required|exists:lugars,id|different:lugar_origen_id',
+            'ida_vuelta'              => 'nullable|boolean',
+            'concepto'                => 'nullable|string|max:250',
             'precio'                  => 'required|numeric|min:0',
             'vehicle_id'              => 'nullable|exists:vehicles,id',
             'placa_vehiculo'          => 'nullable|string|max:10',

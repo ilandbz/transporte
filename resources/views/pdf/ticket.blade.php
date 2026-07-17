@@ -89,7 +89,16 @@
         <table class="details">
             <tr>
                 <th>Servicio:</th>
-                <td>SERVICIO DE TRANSPORTE<br>{{ $ticket->origen_tramo }} - {{ $ticket->destino_tramo }}</td>
+                <td>
+                    @if($ticket->concepto)
+                        {{ $ticket->concepto }}
+                    @else
+                        SERVICIO DE TRANSPORTE<br>{{ $ticket->origen_tramo }} - {{ $ticket->destino_tramo }}
+                        @if($ticket->ida_vuelta)
+                            <br><strong>(IDA Y VUELTA)</strong>
+                        @endif
+                    @endif
+                </td>
             </tr>
             <tr>
                 <th>Pasajero:</th>

@@ -42,6 +42,8 @@ class TicketService
                 'vehicle_id'              => $data['vehicle_id'] ?? null,
                 'lugar_origen_id'         => $origenLugar?->id,
                 'lugar_destino_id'        => $destinoLugar?->id,
+                'ida_vuelta'              => $data['ida_vuelta'] ?? false,
+                'concepto'                => $data['concepto'] ?? null,
                 'origen_tramo'            => $origenLugar?->nombre,
                 'destino_tramo'           => $destinoLugar?->nombre,
                 'dni_pasajero'            => $cliente?->documento,
