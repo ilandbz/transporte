@@ -52,6 +52,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::put('admin/routes/tariffs/{tariff}', [RouteManagementController::class, 'updateTariff']);
     Route::delete('admin/routes/tariffs/{tariff}', [RouteManagementController::class, 'destroyTariff']);
 
+    Route::get('admin/lugares', [LugarController::class, 'adminIndex']);
+    Route::post('admin/lugares', [LugarController::class, 'store']);
+    Route::patch('admin/lugares/{lugar}/toggle', [LugarController::class, 'toggle']);
+
     // Viajes (manifiestos)
     Route::get('trips', [TripController::class, 'index']);
     Route::post('trips', [TripController::class, 'store']);
